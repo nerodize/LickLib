@@ -16,6 +16,7 @@ type Track struct {
 	Difficulty  *Difficulty `gorm:"column:difficulty;type:difficulty"` // oder :text, falls ENUM noch nicht da
 	FileExt     string      `gorm:"column:file_ext;type:text;not null"`
 	SizeBytes   int64       `gorm:"column:size_bytes;not null"`
+	FileURL     string      `gorm:"column:file_url;type:text" json:"file_url,omitempty"`
 
 	CreatedAt time.Time `gorm:"column:created_at;not null;default:now()"`
 	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:now()"`

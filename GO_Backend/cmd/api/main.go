@@ -19,6 +19,7 @@ import (
 	"LickLib/cmd/internal/helpers"
 	"LickLib/cmd/internal/repository/pg"
 	"LickLib/cmd/internal/service"
+	"LickLib/cmd/internal/storage"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 	// --- Migrations (vor HTTP-Server!) ---
 	migrations := []string{
 		"migrations/002_updated_schema.sql",
-		// später: "migrations/003_add_something.sql",
+		"migrations/003_updated_tracks.sql",
 	}
 
 	for _, m := range migrations {
@@ -59,8 +60,12 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 
 	trackRepo := pg.NewTrackRepoGorm(gdb)
-	trackService := service.NewTrackService(trackRepo)
-	trackHandler := handlers.NewTrackHandler(trackService)
+	trackReadService := service.NewTrackReadService(trackRepo)
+	trackWriteService := service.NewTrackWriteService(trackRepo)
+	baseURL := "http://localhost:8080/static"
+	store := storage.NewLocalStorage("./uploads", baseURL)
+
+	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService, store)
 
 	r := chi.NewRouter()
 	r.Get("/users/{id}", userHandler.GetByID)
@@ -68,6 +73,17 @@ func main() {
 	r.Get("/users/username/{username}", userHandler.GetByUsername)
 	r.Get("/tracks/{id}", trackHandler.GetByID)
 	r.Get("/tracks/by-username/{username}", trackHandler.GetByUsername)
+
+	baseUploadPath := "./uploads"
+
+	//store := storage.NewLocalStorage(baseUploadPath, baseURL)
+
+	fs := http.FileServer(http.Dir(baseUploadPath))
+	r.Handle("/static/*", http.StripPrefix("/static/", fs))
+
+	// upload endpoint (test)
+	r.Post("/uploads", trackHandler.Upload)
+	//r.Post("/uploads", trackHandler.Upload)
 
 	// --- HTTP Server mit Graceful Shutdown ---
 	srv := &http.Server{

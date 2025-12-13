@@ -9,7 +9,7 @@ type TrackReadService struct {
 	repo repository.TrackRepository
 }
 
-func NewTrackService(r repository.TrackRepository) *TrackReadService {
+func NewTrackReadService(r repository.TrackRepository) *TrackReadService {
 	return &TrackReadService{repo: r}
 }
 

@@ -14,6 +14,7 @@ const (
 	DifficultyGoggins Difficulty = "GOGGINS"
 )
 
+// gorm function to get the values from the db => double check
 func (d *Difficulty) Scan(value any) error {
 	if value == nil {
 		*d = ""
