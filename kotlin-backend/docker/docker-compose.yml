@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # --- 1. MinIO S3 Emulator ---
   minio:
     image: minio/minio:latest
     container_name: minio_s3_emulator
@@ -8,28 +9,40 @@ services:
     ports:
       - "9000:9000" # MinIO API Endpunkt (für Ihre Anwendung)
       - "9001:9001" # MinIO Konsole (Web-Oberfläche)
-
-    # Umgebungsvariablen für Zugangsdaten und automatische Bucket-Erstellung
+    # Umgebungsvariablen für Zugangsdaten
     environment:
-      # --- Zugangsdaten ---
       MINIO_ROOT_USER: minio_admin_user
       MINIO_ROOT_PASSWORD: supersecretpassword123
-
     # Der Befehl, um MinIO im Server-Modus zu starten und die Konsole zu aktivieren
     command: server /data --console-address ":9001"
-
     # Persistentes Speichern der Daten
     volumes:
-      # Die Daten werden im Volume 'minio_data' auf Ihrem Host gespeichert
       - minio_data:/data
 
-    # Healthcheck, um den Status des Dienstes zu überprüfen
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+  # --- 2. PostgreSQL-Datenbank HINZUGEFÜGT ---
+  postgres:
+    image: postgres:16-alpine # Schlankes, stabiles Postgres-Image
+    container_name: licklib-db
+    # Port-Mapping: Host-Port:Container-Port.
+    # Standard-Postgres-Port ist 5432
+    ports:
+      - "5432:5432"
 
-# Definiert das Volume für die persistente Speicherung
+    # Umgebungsvariablen für die Konfiguration (sehr wichtig!)
+    environment:
+      # Die Datenbank, die beim Start automatisch erstellt wird
+      POSTGRES_DB: licklib
+      # Der Benutzername für den Datenbankzugriff
+      POSTGRES_USER: admin
+      # Das Passwort für den Datenbankzugriff
+      POSTGRES_PASSWORD: p # WICHTIG: Kein starkes Passwort für Produktion!
+
+    # Persistentes Speichern der Datenbankdaten
+    volumes:
+      # Das Volume 'postgres_data' speichert die Daten in einem Host-Volume
+      - postgres_data:/var/lib/postgresql/data
+
+# Definiert die Volumes für die persistente Speicherung
 volumes:
   minio_data: {}
+  postgres_data: {} # Neues Volume für PostgreSQL

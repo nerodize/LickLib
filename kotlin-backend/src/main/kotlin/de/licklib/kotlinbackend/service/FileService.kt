@@ -1,22 +1,25 @@
 package de.licklib.kotlinbackend.service
 
 import de.licklib.kotlinbackend.model.File
-import de.licklib.kotlinbackend.properties.BucketProperties
+import de.licklib.kotlinbackend.repository.FileRepository
 import org.springframework.stereotype.Service
 
 @Service
 class FileService(
     private val bucketService: BucketService,
-    private val bucketProperties: BucketProperties
+    private val fileRepository: FileRepository
 ) {
 
     fun uploadFile(file: File): File {
-        val uploadedFile = bucketService.uploadFile(
+        bucketService.uploadFile(
             file = file,
-            bucketName = bucketProperties.name
         )
 
-        return uploadedFile
+        val uploadedFile = file
+
+        val savedFile = fileRepository.save(uploadedFile)
+
+        return savedFile
     }
 
 }
