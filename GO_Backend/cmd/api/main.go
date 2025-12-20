@@ -82,7 +82,6 @@ func main() {
 	r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
 	// upload endpoint (test)
-	r.Post("/uploads", trackHandler.Upload)
 	//r.Post("/uploads", trackHandler.Upload)
 
 	// --- HTTP Server mit Graceful Shutdown ---
