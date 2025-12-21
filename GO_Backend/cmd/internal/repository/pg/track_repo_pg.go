@@ -36,3 +36,9 @@ func (r *TrackRepoGorm) FindByUsername(username string) ([]models.Track, error) 
 	return tracks, nil
 
 }
+
+var _ repository.TrackRepository = &TrackRepoGorm{}
+
+func (r *TrackRepoGorm) CreateTrack(track *models.Track) error {
+	return r.db.Create(track).Error
+}

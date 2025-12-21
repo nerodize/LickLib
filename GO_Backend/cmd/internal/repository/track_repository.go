@@ -6,6 +6,6 @@ import (
 
 type TrackRepository interface {
 	FindByID(id uint) (*models.Track, error)
-
 	FindByUsername(username string) ([]models.Track, error)
+	CreateTrack(track *models.Track) error
 }
