@@ -10,6 +10,7 @@ import (
 
 	"LickLib/cmd/internal/service"
 
+	// chi for routing
 	"github.com/go-chi/chi/v5"
 )
 
@@ -53,7 +54,6 @@ func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(track)
-
 }
 
 func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
@@ -100,4 +100,28 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	// 5. Erfolg melden
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Track erfolgreich hochgeladen"))
+}
+
+func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	trackID, _ := strconv.Atoi(idStr)
+
+	debugUserID := r.URL.Query().Get("asUser")
+
+	currentUserID := 1 // Dein Standard-Fallback
+	if debugUserID != "" {
+		if val, err := strconv.Atoi(debugUserID); err == nil {
+			currentUserID = val
+		}
+	}
+
+	log.Printf("Löschversuch: User %d möchte Track %d löschen", currentUserID, trackID)
+
+	err := h.writeService.DeleteTrack(r.Context(), uint(trackID), currentUserID)
+	if err != nil {
+		http.Error(w, "Forbidden: "+err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

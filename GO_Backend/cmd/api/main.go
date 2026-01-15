@@ -39,7 +39,7 @@ func main() {
 	// --- Migrations (vor HTTP-Server!) ---
 	migrations := []string{
 		"migrations/002_updated_schema.sql",
-		// später: "migrations/003_add_something.sql",
+		"migrations/003_updated_minio_schema.sql",
 	}
 
 	for _, m := range migrations {
@@ -76,6 +76,8 @@ func main() {
 	r.Get("/tracks/{id}", trackHandler.GetByID)
 	r.Get("/tracks/by-username/{username}", trackHandler.GetByUsername)
 	r.Post("/tracks/upload", trackHandler.HandleUpload)
+
+	r.Delete("/tracks/delete/{id}", trackHandler.HandleDelete)
 	// --- HTTP Server mit Graceful Shutdown ---
 	srv := &http.Server{
 		Addr:    ":8080",

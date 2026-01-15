@@ -42,3 +42,8 @@ var _ repository.TrackRepository = &TrackRepoGorm{}
 func (r *TrackRepoGorm) CreateTrack(track *models.Track) error {
 	return r.db.Create(track).Error
 }
+
+func (r *TrackRepoGorm) DeleteTrack(id uint) error {
+	return r.db.Delete(&models.Track{}, id).Error
+	// vllt fehlt hier ByID oder eine Art zur Autorisierung
+}

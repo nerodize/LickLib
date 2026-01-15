@@ -20,8 +20,8 @@ type MinioClient struct {
 func NewMinioClient(cfg config.BucketConfig) *MinioClient {
 	// Initialisierung des MinIO Clients
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: false, // In Docker meist false (kein HTTPS lokal)
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""), // TODO: token noch nötig?
+		Secure: false,                                                     // In Docker meist false (kein HTTPS lokal)
 	})
 	if err != nil {
 		log.Fatalf("Fehler beim Erstellen des MinIO Clients: %v", err)
@@ -40,4 +40,8 @@ func (m *MinioClient) Upload(ctx context.Context, objectName string, reader io.R
 		ContentType: "application/octet-stream",
 	})
 	return err
+}
+
+func (m *MinioClient) Delete(ctx context.Context, objectName string) error {
+	return m.Client.RemoveObject(ctx, m.BucketName, objectName, minio.RemoveObjectOptions{})
 }

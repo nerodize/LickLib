@@ -59,6 +59,7 @@ func Seed(gdb *gorm.DB) error {
 				Difficulty:  &easy,
 				FileExt:     "wav",
 				SizeBytes:   123456,
+				StorageKey:  "seed-max-pentatonic-1.wav", // Dummy Key
 			},
 			{
 				UserID:      userIDByName["max"],
@@ -67,6 +68,7 @@ func Seed(gdb *gorm.DB) error {
 				Difficulty:  &medium,
 				FileExt:     "wav",
 				SizeBytes:   98765,
+				StorageKey:  "seed-max-blues-run.wav",
 			},
 			{
 				UserID:      userIDByName["lisa"],
@@ -75,63 +77,9 @@ func Seed(gdb *gorm.DB) error {
 				Difficulty:  &hard,
 				FileExt:     "mp3",
 				SizeBytes:   654321,
+				StorageKey:  "seed-lisa-jazz-line.mp3",
 			},
-			{
-				UserID:      userIDByName["tom"],
-				Title:       "Sweep Practice",
-				Description: "Arpeggio sweep exercise",
-				Difficulty:  &medium,
-				FileExt:     "wav",
-				SizeBytes:   222222,
-			},
-			{
-				UserID:      userIDByName["jane"],
-				Title:       "Alternate Picking #3",
-				Description: "Speed drill",
-				Difficulty:  &hard,
-				FileExt:     "wav",
-				SizeBytes:   300000,
-			},
-			{
-				UserID:      userIDByName["sam"],
-				Title:       "Funk Groove",
-				Description: "E7#9 rhythm pattern",
-				Difficulty:  &easy,
-				FileExt:     "mp3",
-				SizeBytes:   150000,
-			},
-			{
-				UserID:      userIDByName["sara"],
-				Title:       "Legato Flow",
-				Description: "Three-note-per-string run",
-				Difficulty:  &medium,
-				FileExt:     "wav",
-				SizeBytes:   250000,
-			},
-			{
-				UserID:      userIDByName["alex"],
-				Title:       "Classic Rock Riff",
-				Description: "E major intro",
-				Difficulty:  &easy,
-				FileExt:     "mp3",
-				SizeBytes:   180000,
-			},
-			{
-				UserID:      userIDByName["mia"],
-				Title:       "Metal Gallop",
-				Description: "Right-hand workout",
-				Difficulty:  &hard,
-				FileExt:     "wav",
-				SizeBytes:   350000,
-			},
-			{
-				UserID:      userIDByName["chris"],
-				Title:       "Chord Melody",
-				Description: "Jazz chord solo",
-				Difficulty:  &medium,
-				FileExt:     "mp3",
-				SizeBytes:   270000,
-			},
+			// ... fülle die restlichen Tracks analog mit StorageKey auf
 			{
 				UserID:      userIDByName["nico"],
 				Title:       "Blues Turnaround",
@@ -139,10 +87,13 @@ func Seed(gdb *gorm.DB) error {
 				Difficulty:  &easy,
 				FileExt:     "wav",
 				SizeBytes:   90000,
+				StorageKey:  "seed-nico-blues.wav",
 			},
 		}
 
 		for _, t := range tracks {
+			// WICHTIG: Wenn du OnConflict nutzt, musst du storage_key eventuell
+			// ausschließen oder mit updaten, falls sich der Titel nicht geändert hat.
 			if err := tx.Clauses(clause.OnConflict{
 				Columns: []clause.Column{
 					{Name: "user_id"},

@@ -5,6 +5,7 @@ import (
 	"LickLib/cmd/internal/repository"
 	"LickLib/cmd/storage"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -30,6 +31,7 @@ func NewTrackWriteService(s *storage.MinioClient, r repository.TrackRepository) 
 	return &TrackWriteService{storage: s, repo: r}
 }
 
+// could be seen as create
 func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, size int64, data TrackMetadata) error {
 	objectName := GenerateUniqueName(data)
 
@@ -45,11 +47,33 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 		UserID:      data.UserID,
 		FileExt:     data.FileExt,
 		SizeBytes:   size,
-		//StorageKey:  objectName, // Hier speichern wir die MinIO-ID
+		StorageKey:  objectName, // Hier speichern wir die MinIO-ID TODO: wth
 	}
 
+	// und hier der split für die DB => siehe hier mit create
 	return s.repo.CreateTrack(trackEntity)
 }
+
+// hier dann noch die Funktion zum Track löschen
+func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uint, userID int) error {
+
+	track, err := s.repo.FindByID(trackID)
+	if err != nil {
+		return err
+	}
+
+	if track.UserID != userID {
+		return errors.New("Authorization ERROR, not owner of the Track")
+	}
+
+	if err := s.storage.Delete(ctx, track.StorageKey); err != nil {
+		return fmt.Errorf("failed to delete file from storage: %w", err)
+	}
+
+	return s.repo.DeleteTrack(trackID)
+}
+
+// macht wohl eher nicht viel Sinn, müsste noch ggf. ByID gelöscht werden.
 
 func GenerateUniqueName(metadata TrackMetadata) string {
 	// Erstellt eine ID wie: 550e8400-e29b-11d4-a716-446655440000
