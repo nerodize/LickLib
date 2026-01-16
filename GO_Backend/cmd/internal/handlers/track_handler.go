@@ -125,3 +125,28 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	trackID, _ := strconv.Atoi(idStr)
+
+	// Dein asUser-Hack für Tests, genauso wie bei delete
+	currentUserID := 1
+	if debugID := r.URL.Query().Get("asUser"); debugID != "" {
+		currentUserID, _ = strconv.Atoi(debugID)
+	}
+
+	var req service.UpdateTrackRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Ungültiges JSON", http.StatusBadRequest)
+		return
+	}
+
+	err := h.writeService.UpdateTrack(r.Context(), uint(trackID), currentUserID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

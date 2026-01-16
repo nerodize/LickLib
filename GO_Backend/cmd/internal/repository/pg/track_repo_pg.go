@@ -47,3 +47,9 @@ func (r *TrackRepoGorm) DeleteTrack(id uint) error {
 	return r.db.Delete(&models.Track{}, id).Error
 	// vllt fehlt hier ByID oder eine Art zur Autorisierung
 }
+
+// erlaubt alle x-beliebige value types
+func (r *TrackRepoGorm) UpdateTrack(id uint, updates map[string]interface{}) error {
+	// Updates führt nur die Änderungen aus, die in der Map stehen
+	return r.db.Model(&models.Track{}).Where("id = ?", id).Updates(updates).Error
+}

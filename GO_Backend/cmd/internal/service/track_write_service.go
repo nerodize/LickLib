@@ -27,6 +27,11 @@ type TrackMetadata struct {
 	FileExt     string
 }
 
+type UpdateTrackRequest struct {
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+}
+
 func NewTrackWriteService(s *storage.MinioClient, r repository.TrackRepository) *TrackWriteService {
 	return &TrackWriteService{storage: s, repo: r}
 }
@@ -71,6 +76,29 @@ func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uint, userI
 	}
 
 	return s.repo.DeleteTrack(trackID)
+}
+
+func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uint, userID int, req UpdateTrackRequest) error {
+	// 1. Track laden & Owner checken
+	track, err := s.repo.FindByID(trackID)
+	if err != nil {
+		return err
+	}
+	if track.UserID != userID {
+		return errors.New("nicht autorisiert")
+	}
+
+	// 2. Nur die Felder vorbereiten, die wirklich geändert werden sollen
+	updates := make(map[string]interface{})
+	if req.Title != nil {
+		updates["title"] = *req.Title
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+
+	// 3. In der DB speichern
+	return s.repo.UpdateTrack(trackID, updates)
 }
 
 // macht wohl eher nicht viel Sinn, müsste noch ggf. ByID gelöscht werden.

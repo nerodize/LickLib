@@ -9,5 +9,5 @@ type TrackRepository interface {
 	FindByUsername(username string) ([]models.Track, error)
 	CreateTrack(track *models.Track) error
 	DeleteTrack(id uint) error
-	//UpdateTrack(track *models.Track) error
+	UpdateTrack(id uint, updates map[string]interface{}) error
 }

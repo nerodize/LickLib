@@ -78,6 +78,7 @@ func main() {
 	r.Post("/tracks/upload", trackHandler.HandleUpload)
 
 	r.Delete("/tracks/delete/{id}", trackHandler.HandleDelete)
+	r.Patch("/tracks/update/{id}", trackHandler.HandleUpdate)
 	// --- HTTP Server mit Graceful Shutdown ---
 	srv := &http.Server{
 		Addr:    ":8080",
