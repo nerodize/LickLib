@@ -18,7 +18,7 @@ type TrackWriteService struct {
 	repo    repository.TrackRepository
 }
 
-// billiges DTO
+// billiges DTO => auslagern?
 type TrackMetadata struct {
 	Title       string
 	Description string
@@ -52,7 +52,7 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 		UserID:      data.UserID,
 		FileExt:     data.FileExt,
 		SizeBytes:   size,
-		StorageKey:  objectName, // Hier speichern wir die MinIO-ID TODO: wth
+		StorageKey:  objectName, // Hier speichern wir die MinIO-ID
 	}
 
 	// und hier der split für die DB => siehe hier mit create

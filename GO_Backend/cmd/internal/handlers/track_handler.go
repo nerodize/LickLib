@@ -150,3 +150,18 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *TrackHandler) HandlePlay(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	trackID, _ := strconv.Atoi(idStr)
+
+	// Der Service liefert uns jetzt direkt die fertige URL
+	playURL, err := h.readService.GetPlaybackURL(r.Context(), uint(trackID))
+	if err != nil {
+		http.Error(w, "Track nicht gefunden oder Link-Fehler", http.StatusNotFound)
+		return
+	}
+
+	// Redirect zum Player
+	http.Redirect(w, r, playURL, http.StatusTemporaryRedirect)
+}

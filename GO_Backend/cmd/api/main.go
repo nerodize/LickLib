@@ -65,7 +65,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 
 	trackRepo := pg.NewTrackRepoGorm(gdb)
-	trackReadService := service.NewTrackService(trackRepo)
+	trackReadService := service.NewTrackService(trackRepo, minioClient)
 	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
 
@@ -75,6 +75,7 @@ func main() {
 	r.Get("/users/username/{username}", userHandler.GetByUsername)
 	r.Get("/tracks/{id}", trackHandler.GetByID)
 	r.Get("/tracks/by-username/{username}", trackHandler.GetByUsername)
+	r.Get("/{id}/play", trackHandler.HandlePlay)
 	r.Post("/tracks/upload", trackHandler.HandleUpload)
 
 	r.Delete("/tracks/delete/{id}", trackHandler.HandleDelete)
