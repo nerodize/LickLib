@@ -14,11 +14,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"LickLib/cmd/internal/config"
 	"LickLib/cmd/internal/db"
 	"LickLib/cmd/internal/handlers"
 	"LickLib/cmd/internal/helpers"
 	"LickLib/cmd/internal/repository/pg"
 	"LickLib/cmd/internal/service"
+	"LickLib/cmd/storage"
 )
 
 func main() {
@@ -37,7 +39,7 @@ func main() {
 	// --- Migrations (vor HTTP-Server!) ---
 	migrations := []string{
 		"migrations/002_updated_schema.sql",
-		// später: "migrations/003_add_something.sql",
+		"migrations/003_updated_minio_schema.sql",
 	}
 
 	for _, m := range migrations {
@@ -49,6 +51,10 @@ func main() {
 		}
 	}
 
+	cfg := config.LoadConfig("minioConfig.yaml")
+
+	minioClient := storage.NewMinioClient(cfg.Bucket)
+
 	// --- Seed (nur wenn gewollt; in Prod ggf. deaktivieren) ---
 	helpers.Must0(db.Seed(gdb))
 	log.Println("Migrations & Seed fertig ✅")
@@ -59,8 +65,9 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 
 	trackRepo := pg.NewTrackRepoGorm(gdb)
-	trackService := service.NewTrackService(trackRepo)
-	trackHandler := handlers.NewTrackHandler(trackService)
+	trackReadService := service.NewTrackService(trackRepo, minioClient)
+	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
+	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
 
 	r := chi.NewRouter()
 	r.Get("/users/{id}", userHandler.GetByID)
@@ -68,7 +75,11 @@ func main() {
 	r.Get("/users/username/{username}", userHandler.GetByUsername)
 	r.Get("/tracks/{id}", trackHandler.GetByID)
 	r.Get("/tracks/by-username/{username}", trackHandler.GetByUsername)
+	r.Get("/{id}/play", trackHandler.HandlePlay)
+	r.Post("/tracks/upload", trackHandler.HandleUpload)
 
+	r.Delete("/tracks/delete/{id}", trackHandler.HandleDelete)
+	r.Patch("/tracks/update/{id}", trackHandler.HandleUpdate)
 	// --- HTTP Server mit Graceful Shutdown ---
 	srv := &http.Server{
 		Addr:    ":8080",

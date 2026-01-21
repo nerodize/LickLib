@@ -36,3 +36,20 @@ func (r *TrackRepoGorm) FindByUsername(username string) ([]models.Track, error) 
 	return tracks, nil
 
 }
+
+var _ repository.TrackRepository = &TrackRepoGorm{}
+
+func (r *TrackRepoGorm) CreateTrack(track *models.Track) error {
+	return r.db.Create(track).Error
+}
+
+func (r *TrackRepoGorm) DeleteTrack(id uint) error {
+	return r.db.Delete(&models.Track{}, id).Error
+	// vllt fehlt hier ByID oder eine Art zur Autorisierung
+}
+
+// erlaubt alle x-beliebige value types
+func (r *TrackRepoGorm) UpdateTrack(id uint, updates map[string]interface{}) error {
+	// Updates führt nur die Änderungen aus, die in der Map stehen
+	return r.db.Model(&models.Track{}).Where("id = ?", id).Updates(updates).Error
+}
