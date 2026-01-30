@@ -2,11 +2,13 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // --- models/user.go ---
 type User struct {
-	ID           int       `gorm:"column:id;primaryKey;autoIncrement"`
+	ID           uuid.UUID `gorm:"column:id;primaryKey"`
 	Username     string    `gorm:"column:username;type:text;not null;uniqueIndex"`
 	Email        *string   `gorm:"column:email;type:text;uniqueIndex"`
 	PasswordHash string    `gorm:"column:password_hash;type:text;not null"`

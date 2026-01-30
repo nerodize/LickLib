@@ -36,9 +36,14 @@ func (r *UserRepoGorm) PreloadUserByID(id uint, user *models.User) error {
 func (r *UserRepoGorm) FindByUsername(username string) (*models.User, error) {
 	username = strings.TrimSpace(username) // Leerzeichen / Newline entfernen
 	var user models.User
+	// TODO: warum nochmal preload wichtig?
 	if err := r.db.Preload("Tracks").Preload("Notations").
 		Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *UserRepoGorm) CreateUser(user *models.User) error {
+	return r.db.Create(user).Error
 }

@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"LickLib/cmd/api/middleware"
 	"LickLib/cmd/internal/config"
 	"LickLib/cmd/internal/db"
 	"LickLib/cmd/internal/handlers"
@@ -62,7 +63,8 @@ func main() {
 	// --- Repos, Services, Handler initialisieren ---
 	userRepo := pg.NewUserRepoGorm(gdb)
 	userService := service.NewUserService(userRepo)
-	userHandler := handlers.NewUserHandler(userService)
+	userWriteService := service.NewUserWriteService(userRepo)
+	userHandler := handlers.NewUserHandler(userService, userWriteService)
 
 	trackRepo := pg.NewTrackRepoGorm(gdb)
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
@@ -70,16 +72,24 @@ func main() {
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
 
 	r := chi.NewRouter()
-	r.Get("/users/{id}", userHandler.GetByID)
-	// passt die Route so? @naming conventions
-	r.Get("/users/username/{username}", userHandler.GetByUsername)
-	r.Get("/tracks/{id}", trackHandler.GetByID)
-	r.Get("/tracks/by-username/{username}", trackHandler.GetByUsername)
-	r.Get("/{id}/play", trackHandler.HandlePlay)
-	r.Post("/tracks/upload", trackHandler.HandleUpload)
 
-	r.Delete("/tracks/delete/{id}", trackHandler.HandleDelete)
-	r.Patch("/tracks/update/{id}", trackHandler.HandleUpdate)
+	// public routes
+	r.Group(func(r chi.Router) {
+		r.Get("/tracks/{id}", trackHandler.GetByID)
+		r.Get("/tracks/{id}/play", trackHandler.HandlePlay)
+		r.Get("/users/{id}", userHandler.GetByID)
+		r.Get("/users/search/{username}", userHandler.GetByUsername)
+		r.Post("/users", userHandler.CreateUser)
+	})
+
+	// private routes, gruppiert nach Notwendigkeit von Autorisierung
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthSimulation)
+		r.Post("/tracks", trackHandler.HandleUpload)
+		r.Delete("/tracks/{id}", trackHandler.HandleDelete)
+		r.Patch("/tracks/{id}", trackHandler.HandleUpdate)
+	})
+
 	// --- HTTP Server mit Graceful Shutdown ---
 	srv := &http.Server{
 		Addr:    ":8080",

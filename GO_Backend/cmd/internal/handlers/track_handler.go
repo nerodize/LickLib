@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"LickLib/cmd/api/middleware"
+	"LickLib/cmd/internal/service"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,10 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"LickLib/cmd/internal/service"
-
 	// chi for routing
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type TrackHandler struct {
@@ -56,8 +57,8 @@ func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(track)
 }
 
+// vllt auslagern ode reuse für Notation
 func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
-	// 1. Speicherlimit festlegen (z.B. 32 MB)
 	// Alles was größer ist, wird in temporäre Dateien auf der Platte ausgelagert
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
@@ -65,7 +66,6 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Die Datei aus dem Formular fischen
 	// "trackFile" muss der Key im Frontend/Postman sein
 	file, header, err := r.FormFile("trackFile")
 	if err != nil {
@@ -74,22 +74,26 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close() // Wichtig: Den Stream am Ende des Handlers schließen!
 
-	// 3. Metadaten aus den Form-Feldern extrahieren
-	// In Go kommen FormValue-Rückgaben immer als String
 	userIDStr := r.FormValue("user_id")
-	// Kleiner Helfer: String zu Int konvertieren (error handling weggelassen für Kürze)
-	userID, _ := strconv.Atoi(userIDStr)
+
+	// 2. Parsen statt konvertieren
+	// uuid.Parse prüft auch direkt, ob der String das richtige Format hat
+	// (z.B. 8-4-4-4-12 Zeichen)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		// Wenn die ID "1" oder "hallo" ist, wird das hier abgefangen
+		http.Error(w, "Ungültige User-ID (kein UUID-Format)", http.StatusBadRequest)
+		return
+	}
 
 	metadata := service.TrackMetadata{
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 		UserID:      userID,
 		Difficulty:  r.FormValue("difficulty"),
-		FileExt:     filepath.Ext(header.Filename), // Extrahiert .mp3, .wav etc.
+		FileExt:     filepath.Ext(header.Filename),
 	}
 
-	// 4. Den Write-Service aufrufen (Streaming startet hier)
-	// Wir geben 'file' (den io.Reader) direkt weiter
 	err = h.writeService.UploadTrack(r.Context(), file, header.Size, metadata)
 	if err != nil {
 		log.Printf("Upload Fehler: %v", err)
@@ -106,13 +110,12 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := strconv.Atoi(idStr)
 
-	debugUserID := r.URL.Query().Get("asUser")
+	currentUserID := middleware.GetUserID(r.Context())
 
-	currentUserID := 1 // Dein Standard-Fallback
-	if debugUserID != "" {
-		if val, err := strconv.Atoi(debugUserID); err == nil {
-			currentUserID = val
-		}
+	// more or less redundant
+	if currentUserID == uuid.Nil {
+		http.Error(w, "Nicht autorisiert", http.StatusUnauthorized)
+		return
 	}
 
 	log.Printf("Löschversuch: User %d möchte Track %d löschen", currentUserID, trackID)
@@ -130,15 +133,15 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := strconv.Atoi(idStr)
 
-	// Dein asUser-Hack für Tests, genauso wie bei delete
-	currentUserID := 1
-	if debugID := r.URL.Query().Get("asUser"); debugID != "" {
-		currentUserID, _ = strconv.Atoi(debugID)
+	currentUserID := middleware.GetUserID(r.Context())
+
+	if currentUserID == uuid.Nil {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
 	}
 
 	var req service.UpdateTrackRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Ungültiges JSON", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
@@ -149,19 +152,20 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Track successfully updated"})
 }
 
 func (h *TrackHandler) HandlePlay(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := strconv.Atoi(idStr)
 
-	// Der Service liefert uns jetzt direkt die fertige URL
+	// pre baked URL
 	playURL, err := h.readService.GetPlaybackURL(r.Context(), uint(trackID))
 	if err != nil {
-		http.Error(w, "Track nicht gefunden oder Link-Fehler", http.StatusNotFound)
+		http.Error(w, "Track not found or faulty link", http.StatusNotFound)
 		return
 	}
 
-	// Redirect zum Player
+	// Redirect zum Player => browser oder eigener player in der App (könnte schwer werden)
 	http.Redirect(w, r, playURL, http.StatusTemporaryRedirect)
 }

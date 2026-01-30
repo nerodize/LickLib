@@ -37,6 +37,7 @@ func (r *TrackRepoGorm) FindByUsername(username string) ([]models.Track, error) 
 
 }
 
+// Verwendungszweck hiervon?
 var _ repository.TrackRepository = &TrackRepoGorm{}
 
 func (r *TrackRepoGorm) CreateTrack(track *models.Track) error {

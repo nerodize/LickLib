@@ -1,15 +1,19 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // --- models/track.go ---
 // models/track.go
 
 // mostly not neccessary: https://gorm.io/docs/belongs_to.html
 type Track struct {
-	ID     int   `gorm:"column:id;primaryKey;autoIncrement"`
-	UserID int   `gorm:"column:user_id;not null;index"`
-	User   *User `gorm:"foreignKey:UserID;references:ID"`
+	ID     int       `gorm:"column:id;primaryKey;autoIncrement"`
+	UserID uuid.UUID `gorm:"column:user_id;not null;index"`
+	User   *User     `gorm:"foreignKey:UserID;references:ID"`
 
 	Title       string      `gorm:"column:title;type:text;not null"`
 	Description string      `gorm:"column:description;type:text;not null"`

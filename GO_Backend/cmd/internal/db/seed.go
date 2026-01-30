@@ -3,6 +3,7 @@ package db
 import (
 	models "LickLib/cmd/internal/entity"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -13,16 +14,17 @@ func Seed(gdb *gorm.DB) error {
 	return gdb.Transaction(func(tx *gorm.DB) error {
 		// 1. User seeden
 		users := []models.User{
-			{Username: "max", Email: ptr("max@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "lisa", Email: ptr("lisa@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "tom", Email: ptr("tom@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "jane", Email: ptr("jane@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "sam", Email: ptr("sam@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "sara", Email: ptr("sara@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "alex", Email: ptr("alex@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "mia", Email: ptr("mia@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "chris", Email: ptr("chris@example.com"), PasswordHash: "dummy-hash"},
-			{Username: "nico", Email: ptr("nico@example.com"), PasswordHash: "dummy-hash"},
+			// ob das so toll ist mit der Mail
+			{ID: uuid.New(), Username: "max", Email: ptr("max@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "lisa", Email: ptr("lisa@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "tom", Email: ptr("tom@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "jane", Email: ptr("jane@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "sam", Email: ptr("sam@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "sara", Email: ptr("sara@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "alex", Email: ptr("alex@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "mia", Email: ptr("mia@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "chris", Email: ptr("chris@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "nico", Email: ptr("nico@example.com"), PasswordHash: "dummy-hash"},
 		}
 
 		for _, u := range users {
@@ -40,9 +42,9 @@ func Seed(gdb *gorm.DB) error {
 			return err
 		}
 
-		userIDByName := make(map[string]int, len(dbUsers))
+		userIDByName := make(map[string]uuid.UUID, len(dbUsers))
 		for _, u := range dbUsers {
-			userIDByName[u.Username] = u.ID
+			userIDByName[u.Username] = u.ID // u.ID ist jetzt ein String
 		}
 
 		// 3. Schwierigkeitsgrade
