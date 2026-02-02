@@ -76,7 +76,6 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	userIDStr := r.FormValue("user_id")
 
-	// 2. Parsen statt konvertieren
 	// uuid.Parse prüft auch direkt, ob der String das richtige Format hat
 	// (z.B. 8-4-4-4-12 Zeichen)
 	userID, err := uuid.Parse(userIDStr)
@@ -101,7 +100,6 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5. Erfolg melden
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Track erfolgreich hochgeladen"))
 }

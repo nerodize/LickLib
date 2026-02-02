@@ -27,6 +27,7 @@ type TrackMetadata struct {
 	FileExt     string
 }
 
+// Festlegen was alles änderbar ist, muss das dann nicht in GORM auch ein pointer sein?
 type UpdateTrackRequest struct {
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
@@ -88,7 +89,6 @@ func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uint, userI
 		return errors.New("nicht autorisiert")
 	}
 
-	// 2. Nur die Felder vorbereiten, die wirklich geändert werden sollen
 	updates := make(map[string]interface{})
 	if req.Title != nil {
 		updates["title"] = *req.Title
@@ -97,14 +97,10 @@ func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uint, userI
 		updates["description"] = *req.Description
 	}
 
-	// 3. In der DB speichern
 	return s.repo.UpdateTrack(trackID, updates)
 }
 
-// macht wohl eher nicht viel Sinn, müsste noch ggf. ByID gelöscht werden.
-
 func GenerateUniqueName(metadata TrackMetadata) string {
-	// Erstellt eine ID wie: 550e8400-e29b-11d4-a716-446655440000
 	newID := uuid.New().String()
 
 	// Wir nehmen die Endung vom Original (z.B. .mp3)

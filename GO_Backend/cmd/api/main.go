@@ -56,17 +56,16 @@ func main() {
 
 	minioClient := storage.NewMinioClient(cfg.Bucket)
 
-	// --- Seed (nur wenn gewollt; in Prod ggf. deaktivieren) ---
 	helpers.Must0(db.Seed(gdb))
 	log.Println("Migrations & Seed fertig ✅")
 
 	// --- Repos, Services, Handler initialisieren ---
 	userRepo := pg.NewUserRepoGorm(gdb)
+	trackRepo := pg.NewTrackRepoGorm(gdb)
 	userService := service.NewUserService(userRepo)
-	userWriteService := service.NewUserWriteService(userRepo)
+	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient)
 	userHandler := handlers.NewUserHandler(userService, userWriteService)
 
-	trackRepo := pg.NewTrackRepoGorm(gdb)
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
 	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
@@ -79,15 +78,22 @@ func main() {
 		r.Get("/tracks/{id}/play", trackHandler.HandlePlay)
 		r.Get("/users/{id}", userHandler.GetByID)
 		r.Get("/users/search/{username}", userHandler.GetByUsername)
+
+		// create user hier public, weil hier keine auth nötig
 		r.Post("/users", userHandler.CreateUser)
 	})
 
 	// private routes, gruppiert nach Notwendigkeit von Autorisierung
 	r.Group(func(r chi.Router) {
+		// tracks
 		r.Use(middleware.AuthSimulation)
 		r.Post("/tracks", trackHandler.HandleUpload)
 		r.Delete("/tracks/{id}", trackHandler.HandleDelete)
 		r.Patch("/tracks/{id}", trackHandler.HandleUpdate)
+
+		// users
+		r.Delete("/users/{id}", userHandler.HandleDelete)
+		r.Patch("/users/{id}", userHandler.HandleUpdate)
 	})
 
 	// --- HTTP Server mit Graceful Shutdown ---

@@ -4,6 +4,8 @@ import (
 	models "LickLib/cmd/internal/entity"
 	"LickLib/cmd/internal/repository"
 
+	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 )
 
@@ -34,10 +36,20 @@ func (r *TrackRepoGorm) FindByUsername(username string) ([]models.Track, error) 
 		return nil, err
 	}
 	return tracks, nil
-
 }
 
-// Verwendungszweck hiervon?
+func (r *TrackRepoGorm) FindByUserID(userID uuid.UUID) ([]models.Track, error) {
+	var tracks []models.Track
+	if err := r.db.
+		Joins("User").
+		Where("user_id = ?", userID).
+		Order("tracks.created_at desc").
+		Find(&tracks).Error; err != nil {
+		return nil, err
+	}
+	return tracks, nil
+}
+
 var _ repository.TrackRepository = &TrackRepoGorm{}
 
 func (r *TrackRepoGorm) CreateTrack(track *models.Track) error {

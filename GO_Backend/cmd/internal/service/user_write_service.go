@@ -3,7 +3,10 @@ package service
 import (
 	models "LickLib/cmd/internal/entity"
 	"LickLib/cmd/internal/repository"
+	"LickLib/cmd/storage"
+
 	"context"
+	"errors"
 	"log"
 
 	//besser als "math/rand" vor allem für PWs
@@ -19,12 +22,23 @@ type UserMetadata struct {
 }
 
 type UserWriteService struct {
-	repo repository.UserRepository
+	userRepo  repository.UserRepository
+	trackRepo repository.TrackRepository
+	storage   storage.MinioClient
 }
 
 // Konstruktor
-func NewUserWriteService(r repository.UserRepository) *UserWriteService {
-	return &UserWriteService{repo: r}
+func NewUserWriteService(ur repository.UserRepository, tr repository.TrackRepository, s storage.MinioClient) *UserWriteService {
+	return &UserWriteService{
+		userRepo:  ur,
+		trackRepo: tr,
+		storage:   s,
+	}
+}
+
+type UpdateUserRequest struct {
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
 }
 
 func (s *UserWriteService) CreateUser(ctx context.Context, data UserMetadata) error {
@@ -42,7 +56,7 @@ func (s *UserWriteService) CreateUser(ctx context.Context, data UserMetadata) er
 		PasswordHash: GeneratePassword(8),
 	}
 
-	return s.repo.CreateUser(userEntity)
+	return s.userRepo.CreateUser(userEntity)
 }
 
 // wtf
@@ -98,8 +112,55 @@ func getRandomIndice(max int) int {
 	return int(n.Int64())
 }
 
+// helper => kann ausgelagert werden und eigentlich private
 func CreateUserID() uuid.UUID {
 	// Generiert eine Version 4 UUID (zufallsbasiert)
 	newID := uuid.New()
 	return newID
+}
+
+// muss kaskadierendes Delete sein => checken ob Tracks von dem user und dann Abfahrt
+func (s *UserWriteService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	// muss byID sein...
+	tracks, err := s.trackRepo.FindByUserID(userID)
+
+	for _, track := range tracks {
+		err := s.storage.Delete(ctx, track.StorageKey)
+		if err != nil {
+			log.Printf("Warning: couldn't delete S3 file %s: %v ", track.StorageKey, err)
+		}
+	}
+
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// manuelle Dereferenzierung, Go compiler übernimmt das aber by default also nicht nötig
+	if (*user).ID != userID {
+		return errors.New("Authorization error")
+	}
+
+	return s.userRepo.DeleteUser(userID)
+}
+
+func (s *UserWriteService) UpdateUser(ctx context.Context, userID uuid.UUID, req UpdateUserRequest) error {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	// könnte man wieder mit expliziter Dereferenzierung schreiben
+	if user.ID != userID {
+		return errors.New("not authorized to perform this action")
+	}
+
+	updates := make(map[string]interface{})
+	if req.Username != nil {
+		updates["username"] = *req.Username
+	}
+	if req.Email != nil {
+		updates["email"] = *req.Email
+	}
+
+	return s.userRepo.UpdateUser(userID, updates)
 }
