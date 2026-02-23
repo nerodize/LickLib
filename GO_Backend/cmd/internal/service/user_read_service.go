@@ -4,6 +4,8 @@ import (
 	models "LickLib/cmd/internal/entity"
 	"LickLib/cmd/internal/repository"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 type UserReadService struct {
@@ -14,7 +16,7 @@ func NewUserService(r repository.UserRepository) *UserReadService {
 	return &UserReadService{repo: r}
 }
 
-func (s *UserReadService) GetUserByID(id uint) (*models.User, error) {
+func (s *UserReadService) GetUserByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 	if err := s.repo.PreloadUserByID(id, &user); err != nil {
 		return nil, err

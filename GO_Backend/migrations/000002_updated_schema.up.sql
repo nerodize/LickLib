@@ -12,7 +12,7 @@ DROP TYPE IF EXISTS difficulty CASCADE;
 CREATE TYPE difficulty AS ENUM ('EASY', 'MEDIUM', 'HARD', 'GOGGINS');
 
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     email TEXT UNIQUE,
     password_hash TEXT NOT NULL,
@@ -28,9 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
 -- ===============================================
 
 CREATE TABLE IF NOT EXISTS tracks (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     title TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -62,8 +62,8 @@ END$$;
 CREATE TABLE IF NOT EXISTS notations (
     id SERIAL PRIMARY KEY,
 
-    track_id INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     type notationtype NOT NULL,
     content TEXT NOT NULL,
