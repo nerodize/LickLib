@@ -61,7 +61,7 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 }
 
 // hier dann noch die Funktion zum Track löschen
-func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uint, userID uuid.UUID) error {
+func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uuid.UUID, userID uuid.UUID) error {
 
 	track, err := s.repo.FindByID(trackID)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uint, userI
 	return s.repo.DeleteTrack(trackID)
 }
 
-func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uint, userID uuid.UUID, req UpdateTrackRequest) error {
+func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uuid.UUID, userID uuid.UUID, req UpdateTrackRequest) error {
 	// 1. Track laden & Owner checken
 	track, err := s.repo.FindByID(trackID)
 	if err != nil {

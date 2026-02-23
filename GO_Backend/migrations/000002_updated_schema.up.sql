@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- ===============================================
 
 CREATE TABLE IF NOT EXISTS tracks (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
@@ -62,7 +62,7 @@ END$$;
 CREATE TABLE IF NOT EXISTS notations (
     id SERIAL PRIMARY KEY,
 
-    track_id INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
     author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     type notationtype NOT NULL,

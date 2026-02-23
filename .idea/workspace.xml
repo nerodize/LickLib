@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="24d13338-4231-4dc0-ae35-838ed3916812" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/api/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/api/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/db/seed.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/db/seed.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/entity/track.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/entity/track.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/entity/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/entity/user.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/handlers/track_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/handlers/track_handler.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/pg/track_repo_pg.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/pg/track_repo_pg.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/pg/user_repo_pg.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/pg/user_repo_pg.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/track_repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/repository/track_repository.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/service/track_read_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/service/track_read_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/cmd/internal/service/track_write_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/cmd/internal/service/track_write_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GO_Backend/migrations/002_updated_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/GO_Backend/migrations/002_updated_schema.sql" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nerodize&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/nerodize/LickLib.git&quot;,
+    &quot;accountId&quot;: &quot;b76a924d-262a-49af-a49e-1a35c579399d&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="399tGhOYOotliukdRkqU575MgNH" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "git-widget-placeholder": "LIC-12-Auth",
+    "go.import.settings.migrated": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/dev/LickLib/kotlin-backend",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "SDKs",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.23654.153" />
+        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-IU-243.23654.153" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="24d13338-4231-4dc0-ae35-838ed3916812" name="Changes" comment="" />
+      <created>1770120021191</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1770120021191</updated>
+      <workItem from="1770120023237" duration="30000" />
+      <workItem from="1770120070867" duration="295000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>

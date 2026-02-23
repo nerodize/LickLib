@@ -4,10 +4,10 @@ import (
 	"LickLib/cmd/api/middleware"
 	"LickLib/cmd/internal/service"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	// chi for routing
@@ -28,14 +28,16 @@ func NewTrackHandler(rs *service.TrackReadService, ws *service.TrackWriteService
 }
 
 func (h *TrackHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("HANDLER FEUERT FÜR ID:", chi.URLParam(r, "id")) // <--- DAS HIER
+
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
-	id, err := strconv.Atoi(idStr)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
 		http.Error(w, "invalid track id", http.StatusBadRequest)
 		return
 	}
 
-	track, err := h.readService.GetTrackByID(uint(id))
+	track, err := h.readService.GetTrackByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -106,7 +108,7 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	trackID, _ := strconv.Atoi(idStr)
+	trackID, _ := uuid.Parse(idStr)
 
 	currentUserID := middleware.GetUserID(r.Context())
 
@@ -118,7 +120,7 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Löschversuch: User %d möchte Track %d löschen", currentUserID, trackID)
 
-	err := h.writeService.DeleteTrack(r.Context(), uint(trackID), currentUserID)
+	err := h.writeService.DeleteTrack(r.Context(), trackID, currentUserID)
 	if err != nil {
 		http.Error(w, "Forbidden: "+err.Error(), http.StatusForbidden)
 		return
@@ -129,7 +131,7 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	trackID, _ := strconv.Atoi(idStr)
+	trackID, _ := uuid.Parse(idStr)
 
 	currentUserID := middleware.GetUserID(r.Context())
 
@@ -143,7 +145,7 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.writeService.UpdateTrack(r.Context(), uint(trackID), currentUserID, req)
+	err := h.writeService.UpdateTrack(r.Context(), trackID, currentUserID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -155,10 +157,10 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (h *TrackHandler) HandlePlay(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	trackID, _ := strconv.Atoi(idStr)
+	trackID, _ := uuid.Parse(idStr)
 
 	// pre baked URL
-	playURL, err := h.readService.GetPlaybackURL(r.Context(), uint(trackID))
+	playURL, err := h.readService.GetPlaybackURL(r.Context(), trackID)
 	if err != nil {
 		http.Error(w, "Track not found or faulty link", http.StatusNotFound)
 		return

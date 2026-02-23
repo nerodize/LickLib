@@ -55,6 +55,7 @@ func Seed(gdb *gorm.DB) error {
 		// 4. Tracks mit UserID statt Username
 		tracks := []models.Track{
 			{
+				ID:          uuid.New(),
 				UserID:      userIDByName["max"],
 				Title:       "Pentatonic Lick #1",
 				Description: "A minor box 1",
@@ -64,6 +65,7 @@ func Seed(gdb *gorm.DB) error {
 				StorageKey:  "seed-max-pentatonic-1.wav", // Dummy Key
 			},
 			{
+				ID:          uuid.New(),
 				UserID:      userIDByName["max"],
 				Title:       "Blues Run",
 				Description: "Fast E minor lick",
@@ -73,6 +75,7 @@ func Seed(gdb *gorm.DB) error {
 				StorageKey:  "seed-max-blues-run.wav",
 			},
 			{
+				ID:          uuid.New(),
 				UserID:      userIDByName["lisa"],
 				Title:       "Jazz Line",
 				Description: "ii-V-I progression",
@@ -83,6 +86,7 @@ func Seed(gdb *gorm.DB) error {
 			},
 			// ... fülle die restlichen Tracks analog mit StorageKey auf
 			{
+				ID:          uuid.New(),
 				UserID:      userIDByName["nico"],
 				Title:       "Blues Turnaround",
 				Description: "Classic E turnaround",

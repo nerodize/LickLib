@@ -5,6 +5,8 @@ import (
 	"LickLib/cmd/internal/repository"
 	"LickLib/cmd/storage"
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type TrackReadService struct {
@@ -19,7 +21,7 @@ func NewTrackService(r repository.TrackRepository, storage *storage.MinioClient)
 	}
 }
 
-func (s *TrackReadService) GetTrackByID(id uint) (*models.Track, error) {
+func (s *TrackReadService) GetTrackByID(id uuid.UUID) (*models.Track, error) {
 	track, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
@@ -36,7 +38,7 @@ func (s *TrackReadService) GetTracksByUsername(username string) ([]models.Track,
 	return tracks, nil
 }
 
-func (s *TrackReadService) GetPlaybackURL(ctx context.Context, trackID uint) (string, error) {
+func (s *TrackReadService) GetPlaybackURL(ctx context.Context, trackID uuid.UUID) (string, error) {
 	track, err := s.repo.FindByID(trackID)
 	if err != nil {
 		return "", err

@@ -7,5 +7,6 @@ data class File(
     val size: Long,
     val contentType: String,
     val duration: Long,
+    // warum input stream
     val inputStream: InputStream
 )
