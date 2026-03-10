@@ -1,5 +1,0 @@
-bucket:
-  endpoint: "localhost:9000"
-  access_key: "minio_admin_user"
-  secret_key: "supersecretpassword123"
-  name: "tracks"

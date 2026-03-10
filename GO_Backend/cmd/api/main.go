@@ -27,7 +27,7 @@ func main() {
 	// 3. Router & Dependency Injection
 	// Wir übergeben alles Nötige an die setupRoutes Funktion
 	minioClient := storage.NewMinioClient(cfg.Bucket)
-	router := conf.SetupRoutes(gdb, minioClient)
+	router := conf.SetupRoutes(gdb, minioClient, cfg)
 
 	// 4. Start!
 	conf.RunServer(router)

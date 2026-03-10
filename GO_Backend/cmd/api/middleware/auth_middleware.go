@@ -3,7 +3,10 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 
+	"github.com/MicahParks/keyfunc/v3"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +34,33 @@ func AuthSimulation(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func JWTAuth(jwksURL string) func(http.Handler) http.Handler {
+	// JWKS einmalig laden + auto-refresh
+	jwks, _ := keyfunc.NewDefault([]string{jwksURL})
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Token aus Header extrahieren
+			authHeader := r.Header.Get("Authorization")
+			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+			// Token validieren (lokal!)
+			token, err := jwt.Parse(tokenStr, jwks.Keyfunc)
+			if err != nil || !token.Valid {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			// Claims extrahieren
+			claims := token.Claims.(jwt.MapClaims)
+			userID := claims["sub"].(string) // Keycloak UUID
+
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func GetUserID(ctx context.Context) uuid.UUID {

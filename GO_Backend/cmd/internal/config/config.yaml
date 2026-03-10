@@ -1,0 +1,12 @@
+bucket:
+  endpoint: "localhost:9000"
+  access_key: "minio_admin_user"
+  secret_key: "supersecretpassword123"
+  name: "tracks"
+
+
+keycloak:
+  url: "http://localhost:8081"
+  realm: "licklib"
+  client_id: "licklib-backend"  
+  client_secret: "loBaVdel5PN3NdKKJl9kyjNDwYEWXS2t"   # aus Keycloak kopiert
