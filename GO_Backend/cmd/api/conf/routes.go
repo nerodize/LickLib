@@ -1,6 +1,8 @@
 package conf
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"gorm.io/gorm"
@@ -23,7 +25,7 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 	userRepo := pg.NewUserRepoGorm(gdb)
 	trackRepo := pg.NewTrackRepoGorm(gdb)
 	userService := service.NewUserService(userRepo)
-	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient)
+	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient, &cfg.Keycloak)
 	userHandler := handlers.NewUserHandler(userService, userWriteService)
 
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
@@ -45,11 +47,20 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 
 	})
 
+	var authMiddleware func(http.Handler) http.Handler
+
+	switch cfg.Mode {
+	case config.Dev:
+		authMiddleware = middleware.AuthSimulation
+	case config.Prod:
+		authMiddleware = middleware.JWTAuth(cfg.Keycloak.JWKSUrl())
+	}
+
 	// private routes, gruppiert nach Notwendigkeit von Autorisierung
 	r.Group(func(r chi.Router) {
 		// tracks
 		//r.Use(middleware.AuthSimulation)
-		r.Use(middleware.JWTAuth(cfg.Keycloak.JWKSUrl()))
+		r.Use(authMiddleware)
 		r.Post("/tracks", trackHandler.HandleUpload)
 		r.Delete("/tracks/{id}", trackHandler.HandleDelete)
 		r.Patch("/tracks/{id}", trackHandler.HandleUpdate)

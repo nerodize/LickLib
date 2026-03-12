@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -58,76 +61,82 @@ func (h *UserHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	//userIDStr := r.FormValue("user_id")
-	// TODO: wahrscheinlich nötig hier die ID zu nutzen...
-	// 2. Parsen statt konvertieren
-	// uuid.Parse prüft auch direkt, ob der String das richtige Format hat
-	// (z.B. 8-4-4-4-12 Zeichen)
-	/*
-		userID, err := uuid.Parse(userIDStr)
-		if err != nil {
-			// Wenn die ID "1" oder "hallo" ist, wird das hier abgefangen
-			http.Error(w, "Ungültige User-ID (kein UUID-Format)", http.StatusBadRequest)
-			return
-		}
-	*/
-
+	// 1. Daten extrahieren (wie gehabt)
 	var emailPtr *string
 	mail := r.FormValue("email")
-
 	if mail != "" {
 		emailPtr = &mail
 	}
 
 	metadata := service.UserMetadata{
 		Username: r.FormValue("username"),
-		Email:    emailPtr, // Ist nil, wenn mail leer war -> NULL in der DB
+		Email:    emailPtr,
+		Password: r.FormValue("password"),
 	}
 
-	// 1. Validierung (Optional, aber empfohlen)
-	if metadata.Username == "" {
-		http.Error(w, "Username darf nicht leer sein", http.StatusBadRequest)
+	// 2. Validierung
+	if metadata.Username == "" || metadata.Password == "" {
+		http.Error(w, "Username und Passwort sind erforderlich", http.StatusBadRequest)
 		return
 	}
 
-	// 2. Den Service aufrufen
-	// Wir nutzen r.Context(), um den Request abbrechen zu können, falls der User die Verbindung trennt
-	err := h.writeService.CreateUser(r.Context(), metadata)
+	// 3. Service aufrufen (gibt jetzt die neue UUID zurück)
+	newID, err := h.writeService.CreateUser(r.Context(), metadata)
 	if err != nil {
-		// Hier könntest du prüfen, ob z.B. der Username schon vergeben ist
 		log.Printf("Fehler beim Erstellen des Users: %v", err)
+
+		// Kleiner Bonus: Spezifischer Fehler für "User existiert bereits"
+		if errors.Is(err, service.ErrUserAlreadyExists) {
+			http.Error(w, err.Error(), http.StatusConflict) // 409
+			return
+		}
+
 		http.Error(w, "Konnte User nicht erstellen", http.StatusInternalServerError)
 		return
 	}
 
-	// 3. Erfolgsmeldung zurückgeben
+	// 4. Erfolgsmeldung mit der neuen ID zurückgeben
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated) // 201 Created
+	w.WriteHeader(http.StatusCreated)
 
-	// Dem Client die neue ID und Infos zurückschicken
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
-		"message": "User erfolgreich erstellt",
+		"id":      newID, // <--- EXTREM WICHTIG FÜR BRUNO!
+		"message": "User erfolgreich in Keycloak und DB erstellt",
 	})
 }
 
 func (h *UserHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-
 	idStr := chi.URLParam(r, "id")
-	userID, _ := uuid.Parse(idStr)
-
-	currentUserID := middleware.GetUserID(r.Context())
-
-	if currentUserID == uuid.Nil {
-		http.Error(w, "not authorized user", http.StatusUnauthorized)
+	userID, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "invalid uuid", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Löschversuch: User %d möchte Track %d löschen", currentUserID, userID)
+	currentUserID := middleware.GetUserID(r.Context())
 
-	er := h.writeService.DeleteUser(r.Context(), userID)
-	if er != nil {
-		http.Error(w, "forbidden: "+er.Error(), http.StatusForbidden)
+	// 1. Authentifizierung prüfen
+	if currentUserID == uuid.Nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Autorisierung prüfen (Darf er das?)
+	// Nur der User selbst (oder später ein Admin) darf löschen
+	if currentUserID != userID {
+		log.Printf("[SECURITY] User %s tried to delete User %s", currentUserID, userID)
+		http.Error(w, "forbidden: you can only delete your own account", http.StatusForbidden)
+		return
+	}
+
+	log.Printf("Löschvorgang gestartet für User: %s", userID)
+
+	err = h.writeService.DeleteUser(r.Context(), userID)
+	if err != nil {
+		log.Printf("Fehler beim Löschen: %v", err)
+		http.Error(w, "internal error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -135,42 +144,39 @@ func (h *UserHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	targetID, err := uuid.Parse(idStr)
-	if err != nil {
-		http.Error(w, "Invalid User ID format", http.StatusBadRequest)
-		return
-	}
+	log.Printf("DEBUG: URL-ID ist: %s", idStr)
 
 	currentUserID := middleware.GetUserID(r.Context())
-	if currentUserID == uuid.Nil {
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
-		return // Wichtig: Hier abbrechen!
-	}
+	log.Printf("DEBUG: Context-UserID ist: %s", currentUserID)
 
-	if currentUserID != targetID {
-		log.Printf("[SECURITY] User %v tried to update User %v", currentUserID, targetID)
-		http.Error(w, "Forbidden: You can only update your own profile", http.StatusForbidden)
+	if currentUserID == uuid.Nil {
+		log.Println("DEBUG: Unauthorized - Context-ID ist Nil")
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
 
+	// JSON einlesen
 	var req service.UpdateUserRequest
+	bodyBytes, _ := io.ReadAll(r.Body) // Body zwischenspeichern zum Loggen
+	log.Printf("DEBUG: Body erhalten: %s", string(bodyBytes))
+
+	// Da wir io.ReadAll genutzt haben, müssen wir den Body für den Decoder wieder "füllen"
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("DEBUG: JSON Decode Fehler: %v", err)
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	err = h.writeService.UpdateUser(r.Context(), targetID, req)
+	log.Println("DEBUG: Rufe Service auf...")
+	err := h.writeService.UpdateUser(r.Context(), currentUserID, req)
 	if err != nil {
-		// Hier könntest du noch unterscheiden: War es ein Validierungsfehler (400)
-		// oder ein DB-Fehler (500)?
+		log.Printf("DEBUG: SERVICE ERROR: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	log.Println("--- DEBUG: Update erfolgreich ---")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":  "success",
-		"message": "Profil wurde erfolgreich aktualisiert",
-	})
 }

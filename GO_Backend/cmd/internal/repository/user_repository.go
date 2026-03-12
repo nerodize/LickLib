@@ -13,6 +13,7 @@ type UserRepository interface {
 
 	CreateUser(track *models.User) error
 	DeleteUser(id uuid.UUID) error
+	ExistsByUsernameOrEmail(username string, email string) (bool, error)
 	// string: any
 	UpdateUser(id uuid.UUID, updates map[string]interface{}) error
 }

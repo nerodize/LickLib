@@ -6,12 +6,25 @@ import (
 	"os"
 	"path/filepath"
 
+	// cleanenv wird dann später ziemlich wichtig @Docker und hosting etc.
 	"github.com/ilyakaznacheev/cleanenv"
+)
+
+// in dieser File ist es ein wenig unaufgeräumt
+// TODO: Diese Geschichte noch sorgfältig aufräumen wenn wirklich nötig.
+type AppMode string
+
+const (
+	Dev  AppMode = "dev"
+	Prod AppMode = "prod"
+	Test AppMode = "test"
 )
 
 type Config struct {
 	Bucket   BucketConfig   `yaml:"bucket"`
 	Keycloak KeycloakConfig `yaml:"keycloak"`
+
+	Mode AppMode `yaml:"app_mode" env:"APP_MODE" env-default:"dev"`
 }
 
 type BucketConfig struct {

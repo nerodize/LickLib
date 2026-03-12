@@ -1,3 +1,5 @@
+app_mode: "dev"
+
 bucket:
   endpoint: "localhost:9000"
   access_key: "minio_admin_user"

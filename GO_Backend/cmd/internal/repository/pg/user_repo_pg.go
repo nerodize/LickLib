@@ -56,3 +56,17 @@ func (r *UserRepoGorm) DeleteUser(id uuid.UUID) error {
 func (r *UserRepoGorm) UpdateUser(id uuid.UUID, updates map[string]interface{}) error {
 	return r.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
 }
+
+func (r *UserRepoGorm) ExistsByUsernameOrEmail(username string, email string) (bool, error) {
+	var count int64
+	// so kann man also die datensätze hochzählen, wie viel user mit diesem namen schon existieren sollten
+	err := r.db.Model(&models.User{}).
+		Where("username = ? OR email =?", username, email).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}

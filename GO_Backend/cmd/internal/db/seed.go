@@ -15,16 +15,16 @@ func Seed(gdb *gorm.DB) error {
 		// 1. User seeden
 		users := []models.User{
 			// ob das so toll ist mit der Mail
-			{ID: uuid.New(), Username: "max", Email: ptr("max@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "lisa", Email: ptr("lisa@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "tom", Email: ptr("tom@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "jane", Email: ptr("jane@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "sam", Email: ptr("sam@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "sara", Email: ptr("sara@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "alex", Email: ptr("alex@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "mia", Email: ptr("mia@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "chris", Email: ptr("chris@example.com"), PasswordHash: "dummy-hash"},
-			{ID: uuid.New(), Username: "nico", Email: ptr("nico@example.com"), PasswordHash: "dummy-hash"},
+			{ID: uuid.New(), Username: "max", Email: ptr("max@example.com")},
+			{ID: uuid.New(), Username: "lisa", Email: ptr("lisa@example.com")},
+			{ID: uuid.New(), Username: "tom", Email: ptr("tom@example.com")},
+			{ID: uuid.New(), Username: "jane", Email: ptr("jane@example.com")},
+			{ID: uuid.New(), Username: "sam", Email: ptr("sam@example.com")},
+			{ID: uuid.New(), Username: "sara", Email: ptr("sara@example.com")},
+			{ID: uuid.New(), Username: "alex", Email: ptr("alex@example.com")},
+			{ID: uuid.New(), Username: "mia", Email: ptr("mia@example.com")},
+			{ID: uuid.New(), Username: "chris", Email: ptr("chris@example.com")},
+			{ID: uuid.New(), Username: "nico", Email: ptr("nico@example.com")},
 		}
 
 		for _, u := range users {

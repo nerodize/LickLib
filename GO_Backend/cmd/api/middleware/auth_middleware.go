@@ -55,7 +55,14 @@ func JWTAuth(jwksURL string) func(http.Handler) http.Handler {
 
 			// Claims extrahieren
 			claims := token.Claims.(jwt.MapClaims)
-			userID := claims["sub"].(string) // Keycloak UUID
+			userIDStr := claims["sub"].(string) // Keycloak UUID
+
+			// JETZT PARSEN
+			userID, err := uuid.Parse(userIDStr)
+			if err != nil {
+				http.Error(w, "Invalid User ID in Token", http.StatusUnauthorized)
+				return
+			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -64,7 +71,7 @@ func JWTAuth(jwksURL string) func(http.Handler) http.Handler {
 }
 
 func GetUserID(ctx context.Context) uuid.UUID {
-	if id, ok := ctx.Value(UserIDKey).(uuid.UUID); ok == true {
+	if id, ok := ctx.Value(UserIDKey).(uuid.UUID); ok { // oder: ok == true
 		return id
 	}
 	return uuid.Nil
