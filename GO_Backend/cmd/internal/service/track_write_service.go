@@ -42,11 +42,11 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 		return err
 	}
 
-	objName := GenerateUniqueName(data)
+	//objName := GenerateUniqueName(data)
 
 	trackID := uuid.New()
-	objectName := fmt.Sprintf("%s, %s, %s",
-		objName,
+	objectName := fmt.Sprintf("users/%s/tracks/%s%s",
+		data.UserID,
 		trackID.String(),
 		data.FileExt)
 
@@ -131,3 +131,5 @@ func (s *TrackWriteService) validateTrack(data TrackMetadata) error {
 
 	return nil
 }
+
+//37990a09-169b-460e-9251-aaec0bb42842
