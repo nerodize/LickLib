@@ -43,6 +43,7 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 
 		// create user hier public, weil hier keine auth nötig
 		r.Post("/users", userHandler.CreateUser)
+		// muss hier stehen sonst unlogisch => hier bekommt man erst "Ausweis"
 		r.Post("/auth/login", authHandler.Login)
 
 	})

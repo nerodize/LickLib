@@ -61,40 +61,33 @@ func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 
 // vllt auslagern ode reuse für Notation
 func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
-	// Alles was größer ist, wird in temporäre Dateien auf der Platte ausgelagert
+	currentUserID := middleware.GetUserID(r.Context())
+	if currentUserID == uuid.Nil {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
-		http.Error(w, "Datei zu groß oder fehlerhaft", http.StatusBadRequest)
-		return
+		http.Error(w, "track is too large or faulty", http.StatusBadRequest)
 	}
 
-	// "trackFile" muss der Key im Frontend/Postman sein
 	file, header, err := r.FormFile("trackFile")
 	if err != nil {
-		http.Error(w, "Datei 'trackFile' konnte nicht gelesen werden", http.StatusBadRequest)
-		return
+		http.Error(w, "file: 'trackFile' is missing", http.StatusBadRequest)
 	}
-	defer file.Close() // Wichtig: Den Stream am Ende des Handlers schließen!
+	defer file.Close()
 
-	userIDStr := r.FormValue("user_id")
-
-	// uuid.Parse prüft auch direkt, ob der String das richtige Format hat
-	// (z.B. 8-4-4-4-12 Zeichen)
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		// Wenn die ID "1" oder "hallo" ist, wird das hier abgefangen
-		http.Error(w, "Ungültige User-ID (kein UUID-Format)", http.StatusBadRequest)
-		return
-	}
-
+	// Die userID kommt jetzt SICHER aus dem Context, nicht vom User-Input!
 	metadata := service.TrackMetadata{
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
-		UserID:      userID,
+		UserID:      currentUserID, // <--- HIER passiert die Magie (middleware)
 		Difficulty:  r.FormValue("difficulty"),
 		FileExt:     filepath.Ext(header.Filename),
 	}
 
+	// 4. Service-Aufruf
 	err = h.writeService.UploadTrack(r.Context(), file, header.Size, metadata)
 	if err != nil {
 		log.Printf("Upload Fehler: %v", err)

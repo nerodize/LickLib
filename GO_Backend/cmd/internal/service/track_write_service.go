@@ -27,7 +27,6 @@ type TrackMetadata struct {
 	FileExt     string
 }
 
-// Festlegen was alles änderbar ist, muss das dann nicht in GORM auch ein pointer sein?
 type UpdateTrackRequest struct {
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
@@ -39,15 +38,24 @@ func NewTrackWriteService(s *storage.MinioClient, r repository.TrackRepository) 
 
 // could be seen as create
 func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, size int64, data TrackMetadata) error {
-	objectName := GenerateUniqueName(data)
+	if err := s.validateTrack(data); err != nil {
+		return err
+	}
 
-	// MinIO Upload...
+	objName := GenerateUniqueName(data)
+
+	trackID := uuid.New()
+	objectName := fmt.Sprintf("%s, %s, %s",
+		objName,
+		trackID.String(),
+		data.FileExt)
+
 	if err := s.storage.Upload(ctx, objectName, file, size); err != nil {
 		return err
 	}
 
-	// MAPPER: DTO -> Entity
 	trackEntity := &models.Track{
+		ID:          trackID, // hat gefehlt
 		Title:       data.Title,
 		Description: data.Description,
 		UserID:      data.UserID,
@@ -80,7 +88,6 @@ func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uuid.UUID, 
 }
 
 func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uuid.UUID, userID uuid.UUID, req UpdateTrackRequest) error {
-	// 1. Track laden & Owner checken
 	track, err := s.repo.FindByID(trackID)
 	if err != nil {
 		return err
@@ -103,12 +110,24 @@ func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uuid.UUID, 
 func GenerateUniqueName(metadata TrackMetadata) string {
 	newID := uuid.New().String()
 
-	// Wir nehmen die Endung vom Original (z.B. .mp3)
 	ext := metadata.FileExt
 	if !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
 
-	// Ergebnis: "550e8400-e29b-11d4-a716-446655440000.mp3"
+	// Ergebnis: "550e8400-e29b-11d4-a716-446655440000.mp3 || wav"
 	return fmt.Sprintf("%s%s", newID, ext)
+}
+
+func (s *TrackWriteService) validateTrack(data TrackMetadata) error {
+	if strings.TrimSpace(data.Title) == "" {
+		return errors.New("title cannot be empty")
+	}
+
+	allowedExtensions := map[string]bool{".mp3": true, ".wav": true, ".flac": true}
+	if !allowedExtensions[strings.ToLower(data.FileExt)] { // schöner code imo
+		return fmt.Errorf("file type %s is not supported", data.FileExt)
+	}
+
+	return nil
 }

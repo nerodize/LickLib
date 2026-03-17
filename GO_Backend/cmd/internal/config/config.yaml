@@ -1,4 +1,4 @@
-app_mode: "dev"
+app_mode: "prod"
 
 bucket:
   endpoint: "localhost:9000"
