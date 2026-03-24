@@ -78,6 +78,18 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	const maxFileSize = 100 << 20
+	if header.Size > maxFileSize {
+		http.Error(w, "file exeeds: 100MB", 413)
+	}
+
+	// ein wenig redundant?
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".mp3" && ext != ".wav" && ext != ".flac" {
+		http.Error(w, "only MP3/WAV/FLAC allowed", 400)
+		return
+	}
+
 	// Die userID kommt jetzt SICHER aus dem Context, nicht vom User-Input!
 	metadata := service.TrackMetadata{
 		Title:       r.FormValue("title"),

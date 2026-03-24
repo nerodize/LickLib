@@ -4,6 +4,7 @@ import (
 	models "LickLib/cmd/internal/entity"
 	"LickLib/cmd/internal/repository"
 	"LickLib/cmd/storage"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -38,6 +39,8 @@ func NewTrackWriteService(s *storage.MinioClient, r repository.TrackRepository) 
 
 // could be seen as create
 func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, size int64, data TrackMetadata) error {
+
+	// TODO: should be refactored and should belong to minio.
 	if err := s.validateTrack(data); err != nil {
 		return err
 	}
@@ -124,6 +127,28 @@ func (s *TrackWriteService) validateTrack(data TrackMetadata) error {
 		return errors.New("title cannot be empty")
 	}
 
+	if len(data.Title) > 200 {
+		return errors.New("title too long (max 200 chars)")
+	}
+
+	// Description
+	if len(strings.TrimSpace(data.Description)) < 10 {
+		return errors.New("description must be at least 10 characters")
+	}
+	if len(data.Description) > 2000 {
+		return errors.New("description too long (max 2000 chars)")
+	}
+
+	// Difficulty (optional field)
+	if data.Difficulty != "" {
+		validDifficulties := map[string]bool{
+			"EASY": true, "MEDIUM": true, "HARD": true, "GOGGINS": true,
+		}
+		if !validDifficulties[strings.ToUpper(data.Difficulty)] {
+			return errors.New("invalid difficulty (must be EASY/MEDIUM/HARD/GOGGINS)")
+		}
+	}
+
 	allowedExtensions := map[string]bool{".mp3": true, ".wav": true, ".flac": true}
 	if !allowedExtensions[strings.ToLower(data.FileExt)] { // schöner code imo
 		return fmt.Errorf("file type %s is not supported", data.FileExt)
@@ -132,4 +157,38 @@ func (s *TrackWriteService) validateTrack(data TrackMetadata) error {
 	return nil
 }
 
-//37990a09-169b-460e-9251-aaec0bb42842
+func (s *TrackWriteService) validateAudioFile(file io.Reader, size int64) error {
+	// Size (nochmal, Defense in Depth)
+	const maxSize = 100 * 1024 * 1024 // 100MB
+	if size > maxSize {
+		return errors.New("file exceeds maximum size")
+	}
+
+	// Magic Bytes Check
+	header := make([]byte, 12)
+	n, err := file.Read(header)
+	if err != nil || n < 12 {
+		return errors.New("cannot read file header")
+	}
+
+	// MP3
+	if bytes.HasPrefix(header, []byte("ID3")) {
+		return nil // Valid MP3 with ID3 tag
+	}
+	if header[0] == 0xFF && (header[1]&0xE0) == 0xE0 {
+		return nil // Valid MP3 MPEG frame
+	}
+
+	// WAV
+	if bytes.HasPrefix(header, []byte("RIFF")) &&
+		bytes.Contains(header[8:12], []byte("WAVE")) {
+		return nil
+	}
+
+	// FLAC
+	if bytes.HasPrefix(header, []byte("fLaC")) {
+		return nil
+	}
+
+	return errors.New("not a valid audio file (MP3/WAV/FLAC)")
+}
