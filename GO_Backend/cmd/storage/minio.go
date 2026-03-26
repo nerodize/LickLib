@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -74,12 +73,4 @@ func (m *MinioClient) GetPresignedURL(ctx context.Context, objectName string) (s
 
 func (m *MinioClient) GenerateTrackKey(userID uuid.UUID, trackID uuid.UUID, ext string) string {
 	return fmt.Sprintf("users/%s/tracks/%s%s", userID, trackID, ext)
-}
-
-func (m *MinioClient) ValidateAudioFile(file io.Reader, size int64) error {
-	if size > (100 << 20) {
-		return errors.New("Track size must be smaller than 100MB")
-	}
-
-	return nil
 }

@@ -3,7 +3,6 @@ package service
 import (
 	models "LickLib/cmd/internal/entity"
 	"LickLib/cmd/internal/repository"
-	"LickLib/cmd/storage"
 	"bytes"
 	"context"
 	"errors"
@@ -16,7 +15,7 @@ import (
 )
 
 type TrackWriteService struct {
-	storage *storage.MinioClient
+	storage StorageClient
 	repo    repository.TrackRepository
 }
 
@@ -34,7 +33,7 @@ type UpdateTrackRequest struct {
 	Description *string `json:"description"`
 }
 
-func NewTrackWriteService(s *storage.MinioClient, r repository.TrackRepository) *TrackWriteService {
+func NewTrackWriteService(s StorageClient, r repository.TrackRepository) *TrackWriteService {
 	return &TrackWriteService{storage: s, repo: r}
 }
 
