@@ -12,7 +12,7 @@ import (
 // mostly not neccessary: https://gorm.io/docs/belongs_to.html
 type Track struct {
 	ID     uuid.UUID   `gorm:"column:id;primaryKey" json:"id"`
-	Status TrackStatus `gorm:"column:status;type:status not null" json:status"`
+	Status TrackStatus `gorm:"column:status;type:track_status not null" json:"status"`
 	UserID uuid.UUID   `gorm:"column:user_id;not null;index" json:"user_id"`
 	User   *User       `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
 

@@ -4,8 +4,9 @@ import (
 	"LickLib/cmd/api/middleware"
 	"LickLib/cmd/internal/service"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,6 @@ func NewTrackHandler(rs *service.TrackReadService, ws *service.TrackWriteService
 }
 
 func (h *TrackHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("HANDLER FEUERT FÜR ID:", chi.URLParam(r, "id")) // <--- DAS HIER
 
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := uuid.Parse(idStr)
@@ -59,51 +59,29 @@ func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(track)
 }
 
-// vllt auslagern ode reuse für Notation
+// ausgelagert mit einigen Helpers
 func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
-	currentUserID := middleware.GetUserID(r.Context())
-	if currentUserID == uuid.Nil {
+	userID := middleware.GetUserID(r.Context())
+	if userID == uuid.Nil {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
 
-	err := r.ParseMultipartForm(32 << 20)
+	file, header, err := h.parseUploadRequest(r)
 	if err != nil {
-		http.Error(w, "track is too large or faulty", http.StatusBadRequest)
-	}
-
-	file, header, err := r.FormFile("trackFile")
-	if err != nil {
-		http.Error(w, "file: 'trackFile' is missing", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer file.Close()
 
-	const maxFileSize = 100 << 20
-	if header.Size > maxFileSize {
-		http.Error(w, "file exeeds: 100MB", 413)
+	if err := h.validateUploadFile(header); err != nil {
+		http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
 	}
 
-	// ein wenig redundant?
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext != ".mp3" && ext != ".wav" && ext != ".flac" {
-		http.Error(w, "only MP3/WAV/FLAC allowed", 400)
-		return
-	}
+	metadata := h.extractMetadata(r, userID, header)
 
-	// Die userID kommt jetzt SICHER aus dem Context, nicht vom User-Input!
-	metadata := service.TrackMetadata{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		UserID:      currentUserID, // <--- HIER passiert die Magie (middleware)
-		Difficulty:  r.FormValue("difficulty"),
-		FileExt:     filepath.Ext(header.Filename),
-	}
-
-	// 4. Service-Aufruf
 	err = h.writeService.UploadTrack(r.Context(), file, header.Size, metadata)
 	if err != nil {
-		log.Printf("Upload Fehler: %v", err)
-		http.Error(w, "Fehler beim Speichern des Tracks", http.StatusInternalServerError)
+		h.handleUploadError(w, err)
 		return
 	}
 
@@ -173,4 +151,60 @@ func (h *TrackHandler) HandlePlay(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect zum Player => browser oder eigener player in der App (könnte schwer werden)
 	http.Redirect(w, r, playURL, http.StatusTemporaryRedirect)
+}
+
+// ===== HELPER-FUNKTIONEN =====
+
+func (h *TrackHandler) parseUploadRequest(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
+	// RAM-Limit
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		return nil, nil, errors.New("request too large or faulty")
+	}
+
+	// File extrahieren
+	file, header, err := r.FormFile("trackFile")
+	if err != nil {
+		return nil, nil, errors.New("file 'trackFile' is missing")
+	}
+
+	return file, header, nil
+}
+
+func (h *TrackHandler) validateUploadFile(header *multipart.FileHeader) error {
+	// Size-Check
+	const maxFileSize = 100 << 20 // 100MB
+	if header.Size > maxFileSize {
+		return errors.New("file exceeds 100MB limit")
+	}
+
+	// Extension-Check
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".mp3" && ext != ".wav" && ext != ".flac" {
+		return errors.New("only MP3/WAV/FLAC allowed")
+	}
+
+	return nil
+}
+
+func (h *TrackHandler) extractMetadata(r *http.Request, userID uuid.UUID, header *multipart.FileHeader) service.TrackMetadata {
+	return service.TrackMetadata{
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
+		UserID:      userID,
+		Difficulty:  r.FormValue("difficulty"),
+		FileExt:     filepath.Ext(header.Filename),
+	}
+}
+
+func (h *TrackHandler) handleUploadError(w http.ResponseWriter, err error) {
+	// UNIQUE constraint error
+	if strings.Contains(err.Error(), "duplicate key") ||
+		strings.Contains(err.Error(), "unique constraint") {
+		http.Error(w, "Track with this title already exists", http.StatusConflict)
+		return
+	}
+
+	// Generic error
+	log.Printf("Upload Fehler: %v", err)
+	http.Error(w, "Fehler beim Speichern des Tracks", http.StatusInternalServerError)
 }

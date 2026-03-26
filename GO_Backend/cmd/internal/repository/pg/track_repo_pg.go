@@ -65,3 +65,11 @@ func (r *TrackRepoGorm) UpdateTrack(id uuid.UUID, updates map[string]interface{}
 	// Updates führt nur die Änderungen aus, die in der Map stehen
 	return r.db.Model(&models.Track{}).Where("id = ?", id).Updates(updates).Error
 }
+
+func (r *TrackRepoGorm) DeleteFailedTracksByTitle(userID uuid.UUID, title string) error {
+	return r.db.
+		Where("user_id = ?", userID).
+		Where("title = ?", title).
+		Where("status = ?", models.TrackStatusFailed).
+		Delete(&models.Track{}).Error
+}
