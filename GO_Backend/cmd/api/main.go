@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// 1. Config laden
-	cfg := config.LoadConfig("minioConfig.yaml")
+	cfg := config.LoadConfig("config.yaml")
 
 	// 2. Datenbank & Migrationen
 	gdb, sqlDB := conf.SetupDatabase()

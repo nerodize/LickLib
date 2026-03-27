@@ -1,0 +1,93 @@
+services:
+  backend:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: licklib-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: licks
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio_admin_user
+      MINIO_SECRET_KEY: supersecretpassword123
+      MINIO_BUCKET: tracks
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: licklib
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - licklib-prod
+
+  postgres:
+    image: postgres:16
+    container_name: licklib-postgres-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: licks
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - licklib-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: licklib-minio-prod
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin_user
+      MINIO_ROOT_PASSWORD: supersecretpassword123
+    command: server /tracks --console-address ":9001"
+    volumes:
+      - minio_data:/tracks
+    networks:
+      - licklib-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: licklib-keycloak-prod
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/licks
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+    command: start-dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - licklib-prod
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  licklib-prod:
+    driver: bridge

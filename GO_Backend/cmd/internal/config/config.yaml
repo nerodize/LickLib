@@ -11,4 +11,4 @@ keycloak:
   url: "http://localhost:8081"
   realm: "licklib"
   client_id: "licklib-backend"  
-  client_secret: "loBaVdel5PN3NdKKJl9kyjNDwYEWXS2t"   # aus Keycloak kopiert
+  client_secret: "hYZjn4hDDNimW6fLjq3WVtQ4oM3dHiDz"   # aus Keycloak kopiert

@@ -101,7 +101,7 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Löschversuch: User %d möchte Track %d löschen", currentUserID, trackID)
+	log.Printf("Löschversuch: User %v möchte Track %v löschen", currentUserID, trackID)
 
 	err := h.writeService.DeleteTrack(r.Context(), trackID, currentUserID)
 	if err != nil {
