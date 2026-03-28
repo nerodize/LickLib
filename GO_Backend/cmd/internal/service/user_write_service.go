@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"strings"
 
@@ -24,9 +25,11 @@ import (
 // Die "dtos" unter Umständen noch auslagern
 type UserMetadata struct {
 	//ID       uuid.UUID `json:"user_id"`
-	Username string  `json:"username"`
-	Email    *string `json:"email"`
-	Password string  `json:"password"` // Hier gehört es hin!
+	Username  string  `json:"username"`
+	Email     *string `json:"email"`
+	Password  string  `json:"password"` // Hier gehört es hin!
+	FirstName string  `json:"first_name"`
+	LastName  string  `json:"last_name"`
 }
 
 type UserWriteService struct {
@@ -98,9 +101,11 @@ func (s *UserWriteService) CreateUser(ctx context.Context, data UserMetadata) (u
 
 	// 4. Den User in Postgres spiegeln (Der "Local"-Eintrag für deine Tracks etc.)
 	userEntity := &models.User{
-		ID:       kcUserID, // Hier die ID nutzen die KC generiert hat!
-		Username: data.Username,
-		Email:    data.Email,
+		ID:        kcUserID, // Hier die ID nutzen die KC generiert hat!
+		Username:  data.Username,
+		Email:     data.Email,
+		FirstName: &data.FirstName,
+		LastName:  &data.LastName,
 	}
 
 	if err := s.userRepo.CreateUser(userEntity); err != nil {
@@ -115,9 +120,11 @@ func (s *UserWriteService) CreateUser(ctx context.Context, data UserMetadata) (u
 func (s *UserWriteService) createKeycloakUser(adminToken string, data UserMetadata) (uuid.UUID, error) {
 	// 1. Payload vorbereiten
 	kcUser := map[string]interface{}{
-		"username": data.Username,
-		"email":    data.Email,
-		"enabled":  true,
+		"username":  data.Username,
+		"email":     data.Email,
+		"enabled":   true,
+		"firstName": data.FirstName,
+		"lastName":  data.LastName,
 		"credentials": []map[string]interface{}{
 			{
 				"type":      "password",
@@ -241,18 +248,35 @@ func (s *UserWriteService) UpdateUser(ctx context.Context, userID uuid.UUID, req
 }
 
 func (s *UserWriteService) ValidateMetadata(data UserMetadata) error {
-	if len(strings.TrimSpace(data.Username)) < 3 { // removes trailing and leading whitespaces
-		return errors.New("Username is too short. Must be at least 3 letters.")
+	if len(strings.TrimSpace(data.Username)) < 3 {
+		return errors.New("Username muss mindestens 3 Zeichen haben")
 	}
 
-	if data.Email == nil || !strings.Contains(*data.Email, "@") {
-		return errors.New("invalid email adress")
+	// nil-Check + Dereferenzierung nötig
+	if data.Email == nil {
+		return errors.New("E-Mail ist Pflicht")
+	}
+	if _, err := mail.ParseAddress(*data.Email); err != nil {
+		return errors.New("ungültige E-Mail-Adresse")
 	}
 
 	if len(data.Password) < 8 {
-		return errors.New("Passwords must be at least 8 letters long")
+		return errors.New("Passwort muss mindestens 8 Zeichen lang sein")
+	}
+
+	if strings.TrimSpace(data.FirstName) == "" {
+		return errors.New("Vorname ist Pflicht")
+	}
+	if len(strings.TrimSpace(data.FirstName)) < 2 {
+		return errors.New("Vorname muss mindestens 2 Zeichen haben")
+	}
+
+	if strings.TrimSpace(data.LastName) == "" {
+		return errors.New("Nachname ist Pflicht")
+	}
+	if len(strings.TrimSpace(data.LastName)) < 2 {
+		return errors.New("Nachname muss mindestens 2 Zeichen haben")
 	}
 
 	return nil
-
 }

@@ -69,9 +69,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metadata := service.UserMetadata{
-		Username: r.FormValue("username"),
-		Email:    emailPtr,
-		Password: r.FormValue("password"),
+		Username:  r.FormValue("username"),
+		Email:     emailPtr,
+		Password:  r.FormValue("password"),
+		FirstName: r.FormValue("first_name"),
+		LastName:  r.FormValue("last_name"),
 	}
 
 	// 2. Validierung
