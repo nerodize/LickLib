@@ -1,0 +1,20 @@
+server:
+  port: 8000
+
+database:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  database: ${DB_NAME}
+  sslmode: disable
+
+storage:
+  endpoint: ${MINIO_ENDPOINT}
+  access_key: ${MINIO_ACCESS_KEY}
+  secret_key: ${MINIO_SECRET_KEY}
+  bucket_name: ${MINIO_BUCKET}
+
+auth:
+  keycloak_url: ${KEYCLOAK_URL}
+  realm: ${KEYCLOAK_REALM}

@@ -1,0 +1,43 @@
+# ============================================
+# STAGE 1: BUILD
+# ============================================
+FROM golang:1.25-alpine AS builder
+#              ↑ Von 1.23 auf 1.25 geändert
+
+WORKDIR /build
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -o licklib \
+    ./cmd/api/main.go
+
+# ============================================
+# STAGE 2: RUNTIME
+# ============================================
+FROM alpine:latest
+
+RUN addgroup -S appgroup && \
+    adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /build/licklib .
+COPY --from=builder /build/migrations ./migrations
+
+RUN chmod +x ./licklib
+
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s \
+    --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 \
+        --spider http://localhost:8000/health || exit 1
+
+CMD ["./licklib"]

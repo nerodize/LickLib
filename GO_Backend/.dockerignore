@@ -1,0 +1,31 @@
+## .dockerignore
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+extras/
+
+# Tests
+*_test.go
+coverage.out
+*.test
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+licklib
+
+# Temp
+tmp/
+temp/

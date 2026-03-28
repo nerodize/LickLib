@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// 1. Config laden
-	cfg := config.LoadConfig("minioConfig.yaml")
+	cfg := config.LoadConfig("config.yaml")
 
 	// 2. Datenbank & Migrationen
 	gdb, sqlDB := conf.SetupDatabase()
@@ -27,7 +27,7 @@ func main() {
 	// 3. Router & Dependency Injection
 	// Wir übergeben alles Nötige an die setupRoutes Funktion
 	minioClient := storage.NewMinioClient(cfg.Bucket)
-	router := conf.SetupRoutes(gdb, minioClient)
+	router := conf.SetupRoutes(gdb, minioClient, cfg)
 
 	// 4. Start!
 	conf.RunServer(router)

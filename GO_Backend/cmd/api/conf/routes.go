@@ -1,6 +1,8 @@
 package conf
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"gorm.io/gorm"
@@ -13,9 +15,9 @@ import (
 	"LickLib/cmd/storage"
 )
 
-func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient) *chi.Mux {
+func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
-	cfg := config.LoadConfig("minioConfig.yaml")
+	//cfg := config.LoadConfig("minioConfig.yaml")
 
 	minioClient := storage.NewMinioClient(cfg.Bucket)
 	// Repos & Services hier initialisieren...
@@ -23,13 +25,14 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient) *chi.Mux {
 	userRepo := pg.NewUserRepoGorm(gdb)
 	trackRepo := pg.NewTrackRepoGorm(gdb)
 	userService := service.NewUserService(userRepo)
-	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient)
+	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient, &cfg.Keycloak)
 	userHandler := handlers.NewUserHandler(userService, userWriteService)
 
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
 	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
 
+	authHandler := handlers.NewAuthHandler(cfg.Keycloak)
 	// public routes
 	r.Group(func(r chi.Router) {
 		r.Get("/tracks/{id}", trackHandler.GetByID)
@@ -40,12 +43,25 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient) *chi.Mux {
 
 		// create user hier public, weil hier keine auth nötig
 		r.Post("/users", userHandler.CreateUser)
+		// muss hier stehen sonst unlogisch => hier bekommt man erst "Ausweis"
+		r.Post("/auth/login", authHandler.Login)
+
 	})
+
+	var authMiddleware func(http.Handler) http.Handler
+
+	switch cfg.Mode {
+	case config.Dev:
+		authMiddleware = middleware.AuthSimulation
+	case config.Prod:
+		authMiddleware = middleware.JWTAuth(cfg.Keycloak.JWKSUrl())
+	}
 
 	// private routes, gruppiert nach Notwendigkeit von Autorisierung
 	r.Group(func(r chi.Router) {
 		// tracks
-		r.Use(middleware.AuthSimulation)
+		//r.Use(middleware.AuthSimulation)
+		r.Use(authMiddleware)
 		r.Post("/tracks", trackHandler.HandleUpload)
 		r.Delete("/tracks/{id}", trackHandler.HandleDelete)
 		r.Patch("/tracks/{id}", trackHandler.HandleUpdate)

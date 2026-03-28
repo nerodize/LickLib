@@ -13,4 +13,6 @@ type TrackRepository interface {
 	CreateTrack(track *models.Track) error
 	DeleteTrack(id uuid.UUID) error
 	UpdateTrack(id uuid.UUID, updates map[string]interface{}) error
+
+	DeleteFailedTracksByTitle(userID uuid.UUID, title string) error
 }

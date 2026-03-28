@@ -3,12 +3,14 @@ package storage
 import (
 	"LickLib/cmd/internal/config" // Import deiner Config-Struktur
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -23,8 +25,8 @@ type MinioClient struct {
 func NewMinioClient(cfg config.BucketConfig) *MinioClient {
 	// Initialisierung des MinIO Clients
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""), // TODO: token noch nötig?
-		Secure: false,                                                     // In Docker meist false (kein HTTPS lokal)
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: false, // In Docker meist false (kein HTTPS lokal)
 	})
 	if err != nil {
 		log.Fatalf("Fehler beim Erstellen des MinIO Clients: %v", err)
@@ -39,6 +41,11 @@ func NewMinioClient(cfg config.BucketConfig) *MinioClient {
 }
 
 func (m *MinioClient) Upload(ctx context.Context, objectName string, reader io.Reader, size int64) error {
+	const minioMaxSize = 5 * 1024 * 1024 * 1024 // 5GB (MinIO default)
+	if size > minioMaxSize {
+		return errors.New("file exceeds MinIO size limit")
+	}
+
 	_, err := m.Client.PutObject(ctx, m.BucketName, objectName, reader, size, minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	})
@@ -62,4 +69,8 @@ func (m *MinioClient) GetPresignedURL(ctx context.Context, objectName string) (s
 	}
 
 	return presignedURL.String(), nil
+}
+
+func (m *MinioClient) GenerateTrackKey(userID uuid.UUID, trackID uuid.UUID, ext string) string {
+	return fmt.Sprintf("users/%s/tracks/%s%s", userID, trackID, ext)
 }
