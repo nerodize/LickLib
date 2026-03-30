@@ -72,6 +72,10 @@ func createTestUser(t *testing.T, db *gorm.DB) uuid.UUID {
 // ===== TESTS =====
 
 func TestCreateTrack(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 
