@@ -61,4 +61,4 @@ jobs:
           cache-dependency-path: GO_Backend/go.sum
 
       - name: Integration Tests
-        run: go test -v ./... -run Integration
+        run: go test -v ./...
