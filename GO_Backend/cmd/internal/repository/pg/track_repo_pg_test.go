@@ -111,6 +111,10 @@ func TestCreateTrack(t *testing.T) {
 }
 
 func TestUpdateTrack_StatusTransition(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 
@@ -149,6 +153,10 @@ func TestUpdateTrack_StatusTransition(t *testing.T) {
 }
 
 func TestDeleteFailedTracksByTitle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 
@@ -205,6 +213,10 @@ func TestDeleteFailedTracksByTitle(t *testing.T) {
 }
 
 func TestUniqueConstraint_OnlyForReadyTracks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 
