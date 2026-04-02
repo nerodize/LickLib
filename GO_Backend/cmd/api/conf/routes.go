@@ -13,10 +13,15 @@ import (
 	"LickLib/cmd/internal/repository/pg"
 	"LickLib/cmd/internal/service"
 	"LickLib/cmd/storage"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(middleware.PrometheusMiddleware) // ← vor allen anderen Middlewares
+
 	//cfg := config.LoadConfig("minioConfig.yaml")
 
 	minioClient := storage.NewMinioClient(cfg.Bucket)
@@ -45,6 +50,9 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 		r.Post("/users", userHandler.CreateUser)
 		// muss hier stehen sonst unlogisch => hier bekommt man erst "Ausweis"
 		r.Post("/auth/login", authHandler.Login)
+
+		// prometheus
+		r.Handle("/metrics", promhttp.Handler())
 
 	})
 

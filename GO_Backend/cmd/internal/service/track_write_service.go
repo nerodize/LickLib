@@ -2,6 +2,7 @@ package service
 
 import (
 	models "LickLib/cmd/internal/entity"
+	"LickLib/cmd/internal/metrics"
 	"LickLib/cmd/internal/repository"
 	"bytes"
 	"context"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type TrackWriteService struct {
@@ -39,14 +41,15 @@ func NewTrackWriteService(s StorageClient, r repository.TrackRepository) *TrackW
 
 // could be seen as create
 func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, size int64, data TrackMetadata) error {
-
 	if err := s.validateMetadata(data); err != nil {
 		return fmt.Errorf("metadata validation: %w", err)
 	}
-
 	if err := s.validateAudioFile(file, size); err != nil {
 		return fmt.Errorf("file validation: %w", err)
 	}
+
+	timer := prometheus.NewTimer(metrics.TrackUploadDuration)
+	defer timer.ObserveDuration()
 
 	if err := s.repo.DeleteFailedTracksByTitle(data.UserID, data.Title); err != nil {
 		log.Printf("Warning: Could not cleanup old failed tracks for %s: %v", data.Title, data.UserID)
@@ -82,6 +85,8 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 
 	if err := s.storage.Upload(ctx, objectName, file, size); err != nil {
 		// ROLLBACK: Status auf FAILED setzen
+		metrics.TrackUploadsTotal.WithLabelValues("failed").Inc()
+
 		s.repo.UpdateTrack(trackID, map[string]interface{}{
 			"status": models.TrackStatusFailed,
 		})
@@ -92,14 +97,13 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 		"status":      models.TrackStatusReady,
 		"storage_key": objectName,
 	}); err != nil {
-		// TODO: help
-		// Hier haben wir ein Problem: File ist in MinIO, aber Status falsch
 		// In Production: Queue für Cleanup-Job
 		return fmt.Errorf("failed to update track status: %w", err)
 	}
 
-	return nil
+	metrics.TrackUploadsTotal.WithLabelValues("success").Inc()
 
+	return nil
 }
 
 // hier dann noch die Funktion zum Track löschen

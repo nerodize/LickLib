@@ -1,0 +1,86 @@
+groups:
+  - name: licklib_slo
+    rules:
+
+      - alert: UploadErrorRateHigh
+        expr: |
+          rate(licklib_track_uploads_total{status="failed"}[5m])
+          /
+          rate(licklib_track_uploads_total[5m])
+          > 0.10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Upload-Fehlerrate zu hoch"
+          description: "Fehlerrate ist {{ $value | humanizePercentage }}"
+
+      - alert: UploadLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            rate(licklib_track_upload_duration_seconds_bucket[5m])
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Upload-Latenz p95 über 5s"
+          description: "p95 Latenz ist {{ $value }}s"
+
+      - alert: HTTPErrorRateHigh
+        expr: |
+          rate(licklib_http_requests_total{status=~"5.."}[5m])
+          /
+          rate(licklib_http_requests_total[5m])
+          > 0.01
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP 5xx Fehlerrate zu hoch"
+          description: "Server-Fehlerrate ist {{ $value | humanizePercentage }}"
+
+      - alert: APILatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            rate(licklib_http_request_duration_seconds_bucket[5m])
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API-Latenz p95 über 500ms"
+          description: "p95 Latenz ist {{ $value }}s"
+
+
+      - alert: APILatencyHighTEST
+        expr: |
+          histogram_quantile(
+            0.95,
+            rate(licklib_http_request_duration_seconds_bucket[5m])
+          ) > 0.0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API-Latenz p95 über 0ms"
+          description: "p95 Latenz ist {{ $value }}s"
+
+
+      - alert: UploadLatencyHighTEST
+        expr: |
+          histogram_quantile(
+            0.95,
+            rate(licklib_track_upload_duration_seconds_bucket[5m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Upload-Latenz p95 über 0s"
+          description: "p95 Latenz ist {{ $value }}s"
+
+
+      

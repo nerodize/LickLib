@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "**" ] # alle Branches
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ] # nur PRs die in main landen
 
 jobs:
   unit:

@@ -4,6 +4,7 @@ import (
 	"LickLib/cmd/api/conf"
 	"LickLib/cmd/internal/config"
 	"LickLib/cmd/internal/db"
+	"LickLib/cmd/internal/metrics"
 
 	"LickLib/cmd/storage"
 	"os"
@@ -14,6 +15,8 @@ import (
 func main() {
 	// 1. Config laden
 	cfg := config.LoadConfig("config.yaml")
+
+	metrics.Init()
 
 	// 2. Datenbank & Migrationen
 	gdb, sqlDB := conf.SetupDatabase()

@@ -52,13 +52,15 @@ dev:
 	@echo "   MinIO:     http://localhost:9000 (admin: minio_admin_user)"
 	@echo "   MinIO UI:  http://localhost:9001"
 	@echo "   Keycloak:  http://localhost:8081"
+	@echo "   Grafana:   http://localhost:3000"	
+	@echo "   Prometh.:  http://localhost:9090"
 
 dev-down:
-	@echo "🛑 Stopping dev environment..."
-	cd extras/docker/dev && docker compose down
+	@echo "Stopping dev environment..."
+	cd .extras/docker/dev && docker compose down
 
 dev-logs:
-	cd extras/docker/dev && docker compose logs -f
+	cd .extras/docker/dev && docker compose logs -f
 
 dev-restart: dev-down dev
 
@@ -95,12 +97,12 @@ test-coverage:
 # Test DB starten
 test-up:
 	@echo "Starting test database..."
-	cd extras/docker/test && docker compose up -d
+	cd .extras/docker/test && docker compose up -d
 	@sleep 2
 
 # Test DB stoppen
 test-down:
-	cd extras/docker/test && docker compose down
+	cd .extras/docker/test && docker compose down
 
 # ============================================
 # DATABASE MIGRATIONS
@@ -145,10 +147,10 @@ prod-start: docker-build
 
 prod-stop:
 	@echo "Stopping production stack..."
-	cd extras/docker/prod && docker compose down
+	cd .extras/docker/prod && docker compose down
 
 docker-logs:
-	cd extras/docker/prod && docker compose logs -f backend
+	cd .extras/docker/prod && docker compose logs -f backend
 
 docker-shell:
 	docker exec -it licklib-backend sh
@@ -159,15 +161,15 @@ docker-shell:
 
 clean-dev:
 	@echo "Cleaning dev environment..."
-	cd extras/docker/dev && docker compose down -v
+	cd .extras/docker/dev && docker compose down -v
 
 clean-test:
 	@echo "Cleaning test environment..."
-	cd extras/docker/test && docker compose down -v
+	cd .extras/docker/test && docker compose down -v
 
 clean-prod:
 	@echo "Cleaning production stack..."
-	cd extras/docker/prod && docker compose down -v
+	cd .extras/docker/prod && docker compose down -v
 
 clean: clean-dev clean-test clean-prod
 	@echo "Cleaning Docker resources..."
