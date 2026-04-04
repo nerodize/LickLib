@@ -22,6 +22,11 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 
 	r.Use(middleware.PrometheusMiddleware) // ← vor allen anderen Middlewares
 
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
 	//cfg := config.LoadConfig("minioConfig.yaml")
 
 	minioClient := storage.NewMinioClient(cfg.Bucket)

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: licklib-config
+data:
+  config.yaml: |
+    app_mode: "dev"
+    bucket:
+      endpoint: "192.168.49.1:9000"
+      access_key: "minio_admin_user"
+      secret_key: "supersecretpassword123"
+      name: "tracks"
+    keycloak:
+      url: "http://192.168.49.1:8081"
+      realm: "licklib"
+      client_id: "licklib-backend"
+      client_secret: "hYZjn4hDDNimW6fLjq3WVtQ4oM3dHiDz"
+    
