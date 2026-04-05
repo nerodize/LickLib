@@ -27,6 +27,7 @@ go.work.sum
 
 # env file
 config.yaml
+authConfig.yaml
 cmd/internal/config/config.yaml
 cmd/internal/config/authConfig.yaml
 .env

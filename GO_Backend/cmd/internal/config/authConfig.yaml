@@ -1,5 +1,0 @@
-keycloak:
-  url: "http://localhost:8081"
-  realm: "licklib"
-  client_id: "licklib-backend"  
-  client_secret: "QmwXHB5YfkYtWYAOrvH7dDPWq4MGAF1D"
