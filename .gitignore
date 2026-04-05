@@ -20,16 +20,19 @@ profile.cov
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+
 # Go workspace file
 go.work
 go.work.sum
 
 # env file
+config.yaml
+cmd/internal/config/config.yaml
+cmd/internal/config/authConfig.yaml
 .env
 
 # Editor/IDE
  .idea/
 # .vscode/
-
 
 

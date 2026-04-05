@@ -41,9 +41,17 @@ func (s *TrackReadService) GetTracksByUsername(username string) ([]models.Track,
 func (s *TrackReadService) GetPlaybackURL(ctx context.Context, trackID uuid.UUID) (string, error) {
 	track, err := s.repo.FindByID(trackID)
 	if err != nil {
+		//log.Printf("DEBUG: Track nicht gefunden: %v", err)
 		return "", err
 	}
 
-	// Die Logik für den Presigned Link liegt jetzt im Service/Storage-Layer
-	return s.storage.GetPresignedURL(ctx, track.StorageKey)
+	//log.Printf("DEBUG: StorageKey=%s", track.StorageKey)
+
+	url, err := s.storage.GetPresignedURL(ctx, track.StorageKey)
+	if err != nil {
+		//log.Printf("DEBUG: Presigned URL Fehler: %v", err)
+		return "", err
+	}
+
+	return url, nil
 }

@@ -139,11 +139,13 @@ docker-build:
 # Production-like Stack (Backend + Dependencies)
 prod-start: docker-build
 	@echo "Starting production stack..."
-	cd extras/docker/prod && docker compose up -d
+	cd .extras/docker/prod && docker compose up -d
 	@echo "Production stack started!"
 	@echo "   Backend:   http://localhost:8000"
 	@echo "   Health:    http://localhost:8000/health"
 	@echo "   MinIO UI:  http://localhost:9001"
+	@echo "   Grafana:   http://localhost:3000"	
+	@echo "   Prometh.:  http://localhost:9090"
 
 prod-stop:
 	@echo "Stopping production stack..."

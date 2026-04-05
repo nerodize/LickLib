@@ -5,55 +5,66 @@ services:
       dockerfile: Dockerfile
     container_name: licklib-backend
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: licks
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio_admin_user
-      MINIO_SECRET_KEY: supersecretpassword123
-      MINIO_BUCKET: tracks
+      APP_MODE: prod
+      DB_DSN: postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/licks?sslmode=disable
+      BUCKET_ENDPOINT: minio:9000
+      BUCKET_PUBLIC_URL: http://localhost:9000
+      BUCKET_ACCESS_KEY: ${MINIO_ROOT_USER}
+      BUCKET_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      BUCKET_NAME: tracks
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: licklib
+      KEYCLOAK_CLIENT_ID: licklib-backend
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
       minio:
         condition: service_healthy
+      #keycloak:
+        #condition: service_started
     networks:
       - licklib-prod
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   postgres:
     image: postgres:16
     container_name: licklib-postgres-prod
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: licks
-    ports:
-      - "5432:5432"
+    # kein ports Mapping — nur intern erreichbar
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - licklib-prod
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
-
+    ports: 
+      - "5433:5432"
   minio:
     image: minio/minio:latest
     container_name: licklib-minio-prod
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9001:9001"  # UI nur bei Bedarf, in Prod ggf. entfernen
     environment:
-      MINIO_ROOT_USER: minio_admin_user
-      MINIO_ROOT_PASSWORD: supersecretpassword123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: http://localhost:9000
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+
     command: server /tracks --console-address ":9001"
     volumes:
       - minio_data:/tracks
@@ -69,13 +80,17 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: licklib-keycloak-prod
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/licks
-      KC_DB_USERNAME: postgres
-      KC_DB_PASSWORD: postgres
-    command: start-dev
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}  # z.B. auth.licklib.com
+    command: start-dev --import-realm  # ← neu
+    volumes:
+    - ../../../.extras/keycloak:/opt/keycloak/data/import:ro  # ← neu
+    #KC_PROXY: edge                       # falls hinter Reverse Proxy; für lokale Tests redundant
     ports:
       - "8081:8080"
     depends_on:
@@ -84,9 +99,42 @@ services:
     networks:
       - licklib-prod
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: licklib-prometheus-prod
+    volumes:
+      - ../../../.extras/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"  # in Prod ggf. nicht exponieren, nur intern
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'  # 30 Tage Daten behalten
+    networks:
+      - licklib-prod
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: licklib-grafana-prod
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL}  # z.B. https://grafana.licklib.com
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - licklib-prod
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
   minio_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   licklib-prod:

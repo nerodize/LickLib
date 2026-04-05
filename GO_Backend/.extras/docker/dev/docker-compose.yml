@@ -4,7 +4,7 @@ services:
     container_name: licklib-postgres-dev
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: licks
     ports:
       - "5432:5432"
@@ -27,7 +27,7 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: minio_admin_user
-      MINIO_ROOT_PASSWORD: supersecretpassword123
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     command: server /tracks --console-address ":9001"
     volumes:
       - minio_data:/tracks
@@ -49,7 +49,9 @@ services:
       KC_DB_URL: jdbc:postgresql://db:5432/licks
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
-    command: start-dev
+    command: start-dev --import-realm  # ← neu
+    volumes:
+      - ../../../.extras/keycloak:/opt/keycloak/data/import:ro
     ports:
       - "8081:8080"
     depends_on:

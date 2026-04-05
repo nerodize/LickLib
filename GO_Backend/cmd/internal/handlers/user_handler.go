@@ -149,10 +149,10 @@ func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("DEBUG: URL-ID ist: %s", idStr)
 
 	currentUserID := middleware.GetUserID(r.Context())
-	log.Printf("DEBUG: Context-UserID ist: %s", currentUserID)
+	//og.Printf("DEBUG: Context-UserID ist: %s", currentUserID)
 
 	if currentUserID == uuid.Nil {
-		log.Println("DEBUG: Unauthorized - Context-ID ist Nil")
+		//log.Println("DEBUG: Unauthorized - Context-ID ist Nil")
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
@@ -160,21 +160,21 @@ func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	// JSON einlesen
 	var req service.UpdateUserRequest
 	bodyBytes, _ := io.ReadAll(r.Body) // Body zwischenspeichern zum Loggen
-	log.Printf("DEBUG: Body erhalten: %s", string(bodyBytes))
+	//log.Printf("DEBUG: Body erhalten: %s", string(bodyBytes))
 
 	// Da wir io.ReadAll genutzt haben, müssen wir den Body für den Decoder wieder "füllen"
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("DEBUG: JSON Decode Fehler: %v", err)
+		//log.Printf("DEBUG: JSON Decode Fehler: %v", err)
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	log.Println("DEBUG: Rufe Service auf...")
+	//log.Println("DEBUG: Rufe Service auf...")
 	err := h.writeService.UpdateUser(r.Context(), currentUserID, req)
 	if err != nil {
-		log.Printf("DEBUG: SERVICE ERROR: %v", err)
+		//log.Printf("DEBUG: SERVICE ERROR: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

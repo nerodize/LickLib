@@ -20,8 +20,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	fmt.Printf("DEBUG Config: URL=%s, Realm=%s, ID=%s, Secret=%s\n",
-		h.cfg.URL, h.cfg.Realm, h.cfg.ClientID, h.cfg.ClientSecret)
+	//fmt.Printf("DEBUG Config: URL=%s, Realm=%s, ID=%s, Secret=%s\n",
+	//h.cfg.URL, h.cfg.Realm, h.cfg.ClientID, h.cfg.ClientSecret)
 
 	resp, err := http.PostForm(h.cfg.TokenUrl(), url.Values{
 		"grant_type":    {"password"},

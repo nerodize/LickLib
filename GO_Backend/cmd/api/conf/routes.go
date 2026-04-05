@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	mid "github.com/go-chi/chi/v5/middleware"
 	_ "github.com/lib/pq"
 	"gorm.io/gorm"
 
@@ -20,6 +21,7 @@ import (
 func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Use(mid.Recoverer)
 	r.Use(middleware.PrometheusMiddleware) // ← vor allen anderen Middlewares
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

@@ -24,7 +24,7 @@ spec:
             - name: APP_MODE
               value: "dev"
             - name: DB_DSN
-              value: "postgres://postgres:postgres@postgres:5432/licks?sslmode=disable"
+              value: "postgres://postgres:$(DB_PASSWORD)@postgres:5432/licks?sslmode=disable"
           volumeMounts:
             - name: config
               mountPath: /app/config.yaml

@@ -29,6 +29,7 @@ type Config struct {
 
 type BucketConfig struct {
 	Endpoint  string `yaml:"endpoint" env:"BUCKET_ENDPOINT" env-default:"localhost:9000"`
+	PublicURL string `yaml:"public_url"  env:"BUCKET_PUBLIC_URL"`
 	AccessKey string `yaml:"access_key" env:"BUCKET_ACCESS_KEY"` // env aktuell unused, Werte direkt gesetzt
 	SecretKey string `yaml:"secret_key" env:"BUCKET_SECRET_KEY"`
 	Name      string `yaml:"name" env:"BUCKET_NAME"`
@@ -38,7 +39,7 @@ type KeycloakConfig struct {
 	URL          string `yaml:"url"           env:"KEYCLOAK_URL"           env-default:"http://localhost:8081"`
 	Realm        string `yaml:"realm"         env:"KEYCLOAK_REALM"         env-default:"licklib"`
 	ClientID     string `yaml:"client_id"     env:"KEYCLOAK_CLIENT_ID"     env-default:"licklib-backend"`
-	ClientSecret string `yaml:"client_secret"`
+	ClientSecret string `yaml:"client_secret" env:"KEYCLOAK_CLIENT_SECRET"`
 }
 
 // Methoden direkt darunter, gehören zum Typ
@@ -59,16 +60,16 @@ func (k KeycloakConfig) AdminUsersUrl() string {
 func LoadConfig(path string) *Config {
 	var cfg Config
 
-	// Check, ob die Datei existiert
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Printf("Warnung: %s nicht gefunden, versuche alternativen Pfad...", path)
-		// Alternative: Suche im Unterordner, falls man aus dem Root startet
-		path = "cmd/internal/config/config.yaml"
+		// kein Fatalf — einfach nur Env-Variablen lesen
+		if err := cleanenv.ReadEnv(&cfg); err != nil {
+			log.Fatalf("Konfiguration konnte nicht geladen werden: %v", err)
+		}
+		return &cfg
 	}
 
 	err := cleanenv.ReadConfig(path, &cfg)
 	if err != nil {
-		// Hier geben wir den absoluten Pfad aus, damit du im Terminal siehst, wo er gesucht hat
 		abs, _ := filepath.Abs(path)
 		log.Fatalf("Konfiguration konnte nicht geladen werden unter: %s | Fehler: %v", abs, err)
 	}

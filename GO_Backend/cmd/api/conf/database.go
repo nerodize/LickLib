@@ -45,6 +45,7 @@ func RunMigrations(sqlDB *sql.DB) {
 
 func SetupDatabase() (*gorm.DB, *sql.DB) {
 	dsn := os.Getenv("DB_DSN")
+	log.Println(dsn)
 	if dsn == "" {
 		dsn = "postgres://postgres:postgres@localhost:5432/licks?sslmode=disable"
 	}

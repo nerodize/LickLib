@@ -19,24 +19,22 @@ import (
 type MinioClient struct {
 	Client     *minio.Client
 	BucketName string
+	PublicURL  string
 }
 
-// NewMinioClient ist dein "Konstruktor" (analog zur @Bean Methode)
 func NewMinioClient(cfg config.BucketConfig) *MinioClient {
-	// Initialisierung des MinIO Clients
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: false, // In Docker meist false (kein HTTPS lokal)
+		Secure: false,
 	})
 	if err != nil {
 		log.Fatalf("Fehler beim Erstellen des MinIO Clients: %v", err)
 	}
 
-	log.Printf("MinIO Client erfolgreich für Endpoint %s erstellt", cfg.Endpoint)
-
 	return &MinioClient{
 		Client:     client,
 		BucketName: cfg.Name,
+		PublicURL:  cfg.PublicURL,
 	}
 }
 
@@ -57,11 +55,9 @@ func (m *MinioClient) Delete(ctx context.Context, objectName string) error {
 }
 
 func (m *MinioClient) GetPresignedURL(ctx context.Context, objectName string) (string, error) {
-	// Wie lange soll der Link gültig sein?
-	expiry := time.Second * 60 * 15 // 15 Minuten => nice code
-
+	expiry := time.Second * 60 * 15
 	reqParams := make(url.Values)
-	reqParams.Set("response-content-type", "audio/mpeg") //wichtig sonst download und kein playback
+	reqParams.Set("response-content-type", "audio/mpeg")
 
 	presignedURL, err := m.Client.PresignedGetObject(ctx, m.BucketName, objectName, expiry, reqParams)
 	if err != nil {
