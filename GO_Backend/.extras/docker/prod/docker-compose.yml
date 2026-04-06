@@ -10,7 +10,7 @@ services:
       APP_MODE: prod
       DB_DSN: postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/licks?sslmode=disable
       BUCKET_ENDPOINT: minio:9000
-      BUCKET_PUBLIC_URL: http://localhost:9000
+      BUCKET_PUBLIC_URL: ${BUCKET_PUBLIC_URL}
       BUCKET_ACCESS_KEY: ${MINIO_ROOT_USER}
       BUCKET_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       BUCKET_NAME: tracks
@@ -51,7 +51,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    ports: 
+    ports:
       - "5433:5432"
   minio:
     image: minio/minio:latest
@@ -62,8 +62,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_SERVER_URL: http://localhost:9000
-      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
 
     command: server /tracks --console-address ":9001"
     volumes:
@@ -87,10 +87,10 @@ services:
       KC_DB_USERNAME: ${DB_USER}
       KC_DB_PASSWORD: ${DB_PASSWORD}
       KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}  # z.B. auth.licklib.com
-    command: start-dev --import-realm  # ← neu
+      KC_PROXY_HEADERS: xforwarded
+    command: start --import-realm --hostname=${KEYCLOAK_HOSTNAME} --hostname-strict=false --http-enabled=true
     volumes:
-    - ../../../.extras/keycloak:/opt/keycloak/data/import:ro  # ← neu
-    #KC_PROXY: edge                       # falls hinter Reverse Proxy; für lokale Tests redundant
+      - ../../../.extras/keycloak:/opt/keycloak/data/import:ro  # ← neu
     ports:
       - "8081:8080"
     depends_on:
