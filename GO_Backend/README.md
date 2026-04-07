@@ -1,7 +1,8 @@
 # LickLib — Backend
 
-> "TikTok für Musiker, aber weniger gehirnzermürbend."  
-> Nutzer laden Licks, Riffs und Stücke hoch — mit automatischer Notation, Genre-Tags und algorithmusbasierter Discovery.
+> "Social Media für Musiker"  
+> Nutzer laden Licks, Riffs und Stücke hoch — mit Notation, Genre-Tags und algorithmusbasierter Discovery.
+> (noch relativ früh in der Entwicklung)
 
 ---
 
