@@ -28,6 +28,14 @@ func NewTrackHandler(rs *service.TrackReadService, ws *service.TrackWriteService
 	}
 }
 
+// @Summary      Track per ID abrufen
+// @Tags         tracks
+// @Produce      json
+// @Param        id   path      string  true  "Track UUID"
+// @Success      200  {object}  models.Track
+// @Failure      400
+// @Failure      404
+// @Router       /tracks/{id} [get]
 func (h *TrackHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
@@ -47,6 +55,13 @@ func (h *TrackHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(track)
 }
 
+// @Summary      Alle Tracks eines Users abrufen
+// @Tags         tracks
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {array}   models.Track
+// @Failure      404
+// @Router       /tracks/user/{username} [get]
 func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(chi.URLParam(r, "username"))
 	track, err := h.readService.GetTracksByUsername(username)
@@ -59,7 +74,19 @@ func (h *TrackHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(track)
 }
 
-// ausgelagert mit einigen Helpers
+// @Summary      Track hochladen
+// @Tags         tracks
+// @Accept       multipart/form-data
+// @Produce      plain
+// @Security     BearerAuth
+// @Param        trackFile  formData  file    true  "Audiodatei (MP3/WAV/FLAC, max 100MB)"
+// @Param        title      formData  string  true  "Titel (3-200 Zeichen)"
+// @Param        description formData string  true  "Beschreibung (10-2000 Zeichen)"
+// @Param        difficulty formData  string  false "EASY|MEDIUM|HARD|GOGGINS"
+// @Success      201
+// @Failure      400
+// @Failure      401
+// @Router       /tracks [post]
 func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == uuid.Nil {
@@ -89,6 +116,14 @@ func (h *TrackHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Track erfolgreich hochgeladen"))
 }
 
+// @Summary      Track löschen
+// @Tags         tracks
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Track UUID"
+// @Success      204
+// @Failure      401
+// @Failure      403
+// @Router       /tracks/{id} [delete]
 func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := uuid.Parse(idStr)
@@ -112,6 +147,18 @@ func (h *TrackHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// @Summary      Track-Metadaten updaten
+// @Tags         tracks
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Track UUID"
+// @Param        body body      service.UpdateTrackRequest  true  "Update-Felder"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Router       /tracks/{id} [patch]
 func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := uuid.Parse(idStr)
@@ -138,6 +185,12 @@ func (h *TrackHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Track successfully updated"})
 }
 
+// @Summary      Track abspielen (Presigned URL)
+// @Tags         tracks
+// @Param        id   path      string  true  "Track UUID"
+// @Success      307
+// @Failure      404
+// @Router       /tracks/{id}/play [get]
 func (h *TrackHandler) HandlePlay(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	trackID, _ := uuid.Parse(idStr)

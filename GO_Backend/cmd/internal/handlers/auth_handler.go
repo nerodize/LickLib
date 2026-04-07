@@ -16,6 +16,15 @@ func NewAuthHandler(cfg config.KeycloakConfig) *AuthHandler {
 	return &AuthHandler{cfg: cfg}
 }
 
+// @Summary      Login
+// @Tags         auth
+// @Accept       application/x-www-form-urlencoded
+// @Produce      json
+// @Param        username  formData  string  true  "Username"
+// @Param        password  formData  string  true  "Passwort"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")

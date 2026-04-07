@@ -29,7 +29,14 @@ func NewUserHandler(s *service.UserReadService, ws *service.UserWriteService) *U
 	}
 }
 
-// GET /users/{id}
+// @Summary      User per ID abrufen
+// @Tags         users
+// @Produce      json
+// @Param        id   path      string  true  "User UUID"
+// @Success      200  {object}  models.User
+// @Failure      400
+// @Failure      404
+// @Router       /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := uuid.Parse(idStr)
@@ -48,6 +55,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// @Summary      User per Username suchen
+// @Tags         users
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {object}  models.User
+// @Failure      404
+// @Router       /users/search/{username} [get]
 func (h *UserHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(chi.URLParam(r, "username"))
 	user, err := h.service.GetUserByUsername(username)
@@ -60,6 +74,19 @@ func (h *UserHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// @Summary      User registrieren
+// @Tags         users
+// @Accept       application/x-www-form-urlencoded
+// @Produce      json
+// @Param        username    formData  string  true   "Username (min 3 Zeichen)"
+// @Param        email       formData  string  true   "E-Mail Adresse"
+// @Param        password    formData  string  true   "Passwort (min 8 Zeichen)"
+// @Param        first_name  formData  string  true   "Vorname"
+// @Param        last_name   formData  string  true   "Nachname"
+// @Success      201  {object}  map[string]interface{}
+// @Failure      400
+// @Failure      409
+// @Router       /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	// 1. Daten extrahieren (wie gehabt)
 	var emailPtr *string
@@ -108,6 +135,15 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// @Summary      Account löschen
+// @Tags         users
+// @Security     BearerAuth
+// @Param        id   path      string  true  "User UUID"
+// @Success      204
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Router       /users/{id} [delete]
 func (h *UserHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	userID, err := uuid.Parse(idStr)
@@ -144,6 +180,16 @@ func (h *UserHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// @Summary      Account updaten
+// @Tags         users
+// @Accept       json
+// @Security     BearerAuth
+// @Param        id    path  string                      true  "User UUID"
+// @Param        body  body  service.UpdateUserRequest   true  "Update-Felder"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Router       /users/{id} [patch]
 func (h *UserHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	log.Printf("DEBUG: URL-ID ist: %s", idStr)

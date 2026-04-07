@@ -12,6 +12,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @title           LickLib API
+// @version         1.0
+// @description     Social Media for musicians — Backend API
+// @host            api.188.245.33.223.nip.io
+// @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// 1. Config laden
 	cfg := config.LoadConfig("config.yaml")

@@ -4,11 +4,11 @@ import (
 	"LickLib/cmd/internal/config" // Import deiner Config-Struktur
 	"context"
 	"errors"
-	"strings"
 	"fmt"
 	"io"
 	"log"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,41 +17,40 @@ import (
 )
 
 type MinioClient struct {
-    Client       *minio.Client  // intern: minio:9000
-    PublicClient *minio.Client  // extern: 188.245.33.223:9000
-    BucketName   string
+	Client       *minio.Client // intern: minio:9000
+	PublicClient *minio.Client // extern: 188.245.33.223:9000
+	BucketName   string
 }
 
 func NewMinioClient(cfg config.BucketConfig) *MinioClient {
-    internalClient, err := minio.New(cfg.Endpoint, &minio.Options{
-        Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-        Secure: false,
-    })
-    if err != nil {
-        log.Fatalf("Fehler beim Erstellen des internen MinIO Clients: %v", err)
-    }
+	internalClient, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		log.Fatalf("Fehler beim Erstellen des internen MinIO Clients: %v", err)
+	}
 
-    // PublicURL ohne Protokoll für minio.New
-    publicEndpoint := strings.TrimPrefix(cfg.PublicURL, "http://")
-    publicEndpoint = strings.TrimPrefix(publicEndpoint, "https://")
+	var publicClient *minio.Client
+	if cfg.PublicURL != "" {
+		publicEndpoint := strings.TrimPrefix(cfg.PublicURL, "http://")
+		publicEndpoint = strings.TrimPrefix(publicEndpoint, "https://")
 
-    publicClient, err := minio.New(publicEndpoint, &minio.Options{
-        Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-        Secure: false,
-    })
-    if err != nil {
-        log.Fatalf("Fehler beim Erstellen des öffentlichen MinIO Clients: %v", err)
-    }
+		publicClient, err = minio.New(publicEndpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+			Secure: false,
+		})
+		if err != nil {
+			log.Fatalf("Fehler beim Erstellen des öffentlichen MinIO Clients: %v", err)
+		}
+	}
 
-    return &MinioClient{
-        Client:       internalClient,
-        PublicClient: publicClient,
-        BucketName:   cfg.Name,
-    }
+	return &MinioClient{
+		Client:       internalClient,
+		PublicClient: publicClient,
+		BucketName:   cfg.Name,
+	}
 }
-
-
-
 
 /*
 // MinioClient kapselt den echten Client
@@ -94,20 +93,22 @@ func (m *MinioClient) Delete(ctx context.Context, objectName string) error {
 	return m.Client.RemoveObject(ctx, m.BucketName, objectName, minio.RemoveObjectOptions{})
 }
 
-
-
 func (m *MinioClient) GetPresignedURL(ctx context.Context, objectName string) (string, error) {
-    expiry := time.Second * 60 * 15
-    reqParams := make(url.Values)
-    reqParams.Set("response-content-type", "audio/mpeg")
+	client := m.PublicClient
+	if client == nil {
+		client = m.Client
+	}
 
-    // PublicClient signiert direkt mit 188.245.33.223:9000
-    presignedURL, err := m.PublicClient.PresignedGetObject(ctx, m.BucketName, objectName, expiry, reqParams)
-    if err != nil {
-        return "", fmt.Errorf("failed to generate presigned url: %w", err)
-    }
+	expiry := time.Second * 60 * 15
+	reqParams := make(url.Values)
+	reqParams.Set("response-content-type", "audio/mpeg")
 
-    return presignedURL.String(), nil
+	presignedURL, err := client.PresignedGetObject(ctx, m.BucketName, objectName, expiry, reqParams)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned url: %w", err)
+	}
+
+	return presignedURL.String(), nil
 }
 
 func (m *MinioClient) GenerateTrackKey(userID uuid.UUID, trackID uuid.UUID, ext string) string {

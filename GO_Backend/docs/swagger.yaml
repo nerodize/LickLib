@@ -1,0 +1,456 @@
+basePath: /
+definitions:
+  models.Difficulty:
+    enum:
+    - EASY
+    - MEDIUM
+    - HARD
+    - GOGGINS
+    type: string
+    x-enum-varnames:
+    - DifficultyEasy
+    - DifficultyMedium
+    - DifficultyHard
+    - DifficultyGoggins
+  models.Notation:
+    properties:
+      author:
+        $ref: '#/definitions/models.User'
+      authorID:
+        type: integer
+      content:
+        description: Tab oder Noten als Text/JSON
+        type: string
+      createdAt:
+        type: string
+      fileExt:
+        type: string
+      id:
+        type: integer
+      sizeBytes:
+        type: integer
+      track:
+        $ref: '#/definitions/models.Track'
+      trackID:
+        type: integer
+      type:
+        allOf:
+        - $ref: '#/definitions/models.NotationType'
+        description: '"TABS" | "NOTES"'
+      updatedAt:
+        type: string
+    type: object
+  models.NotationType:
+    enum:
+    - TABS
+    - NOTES
+    type: string
+    x-enum-varnames:
+    - NotationTypeTabs
+    - NotationTypeNotes
+  models.Track:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      difficulty:
+        $ref: '#/definitions/models.Difficulty'
+      file_ext:
+        type: string
+      id:
+        type: string
+      notations:
+        items:
+          $ref: '#/definitions/models.Notation'
+        type: array
+      size_bytes:
+        type: integer
+      status:
+        $ref: '#/definitions/models.TrackStatus'
+      title:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: string
+    type: object
+  models.TrackStatus:
+    enum:
+    - UPLOADING
+    - READY
+    - FAILED
+    - PROCESSING
+    type: string
+    x-enum-varnames:
+    - TrackStatusUploading
+    - TrackStatusReady
+    - TrackStatusFailed
+    - TrackStatusProcessing
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        description: PasswordHash string     `gorm:"column:password_hash;type:text;not
+          null" json:"-"`
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      notations:
+        items:
+          $ref: '#/definitions/models.Notation'
+        type: array
+      tracks:
+        items:
+          $ref: '#/definitions/models.Track'
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  service.UpdateTrackRequest:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  service.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Social Media for musicians — Backend API
+  title: LickLib API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Passwort
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+      summary: Login
+      tags:
+      - auth
+  /tracks:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Audiodatei (MP3/WAV/FLAC, max 100MB)
+        in: formData
+        name: trackFile
+        required: true
+        type: file
+      - description: Titel (3-200 Zeichen)
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Beschreibung (10-2000 Zeichen)
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: EASY|MEDIUM|HARD|GOGGINS
+        in: formData
+        name: difficulty
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Track hochladen
+      tags:
+      - tracks
+  /tracks/{id}:
+    delete:
+      parameters:
+      - description: Track UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Track löschen
+      tags:
+      - tracks
+    get:
+      parameters:
+      - description: Track UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Track'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+      summary: Track per ID abrufen
+      tags:
+      - tracks
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Track UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update-Felder
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Track-Metadaten updaten
+      tags:
+      - tracks
+  /tracks/{id}/play:
+    get:
+      parameters:
+      - description: Track UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "307":
+          description: Temporary Redirect
+        "404":
+          description: Not Found
+      summary: Track abspielen (Presigned URL)
+      tags:
+      - tracks
+  /tracks/user/{username}:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Track'
+            type: array
+        "404":
+          description: Not Found
+      summary: Alle Tracks eines Users abrufen
+      tags:
+      - tracks
+  /users:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username (min 3 Zeichen)
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: E-Mail Adresse
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Passwort (min 8 Zeichen)
+        in: formData
+        name: password
+        required: true
+        type: string
+      - description: Vorname
+        in: formData
+        name: first_name
+        required: true
+        type: string
+      - description: Nachname
+        in: formData
+        name: last_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+        "409":
+          description: Conflict
+      summary: User registrieren
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Account löschen
+      tags:
+      - users
+    get:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+      summary: User per ID abrufen
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update-Felder
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateUserRequest'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Account updaten
+      tags:
+      - users
+  /users/search/{username}:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+      summary: User per Username suchen
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

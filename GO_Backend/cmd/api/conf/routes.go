@@ -15,6 +15,10 @@ import (
 	"LickLib/cmd/internal/service"
 	"LickLib/cmd/storage"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "LickLib/docs" // generierte docs
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -60,6 +64,8 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 
 		// prometheus
 		r.Handle("/metrics", promhttp.Handler())
+
+		r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	})
 
