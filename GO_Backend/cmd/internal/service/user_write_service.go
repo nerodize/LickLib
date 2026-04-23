@@ -55,6 +55,7 @@ var ErrUserAlreadyExists = errors.New("user already exists")
 type UpdateUserRequest struct {
 	Username *string `json:"username"`
 	Email    *string `json:"email"`
+	// TODO: andere values updaten wäre wichtig
 }
 
 func (s *UserWriteService) getAdminToken(cfg *config.KeycloakConfig) (string, error) {

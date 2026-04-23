@@ -21,6 +21,7 @@ func NewTrackService(r repository.TrackRepository, storage *storage.MinioClient)
 	}
 }
 
+// TODO: Nutzerdaten sollten nicht mitgegeben werden?
 func (s *TrackReadService) GetTrackByID(id uuid.UUID) (*models.Track, error) {
 	track, err := s.repo.FindByID(id)
 	if err != nil {

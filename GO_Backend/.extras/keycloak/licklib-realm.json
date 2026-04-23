@@ -376,46 +376,6 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister" : false,
   "webAuthnPolicyPasswordlessAcceptableAaguids" : [ ],
   "webAuthnPolicyPasswordlessExtraOrigins" : [ ],
-  "users" : [ {
-    "id" : "fa9c0b36-537b-4e05-a873-e703bef0c50c",
-    "username" : "daisy",
-    "firstName" : "daisy",
-    "lastName" : "stone",
-    "email" : "gyat@gmail.com",
-    "emailVerified" : false,
-    "createdTimestamp" : 1775374233496,
-    "enabled" : true,
-    "totp" : false,
-    "credentials" : [ {
-      "id" : "4443985f-5e1b-427e-b7f9-0b455814eabe",
-      "type" : "password",
-      "createdDate" : 1775374233792,
-      "secretData" : "{\"value\":\"eh16AMPca2vFvWCsa5a5yAWcy0QvjVvVgsH7bCOizfSofwA5sGZUfYiAEoOu0WiaFrS2h9i51yworPU6vlfYDA==\",\"salt\":\"03hhAkiiUqSE3W//gl36LA==\",\"additionalParameters\":{}}",
-      "credentialData" : "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
-    } ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-licklib" ],
-    "notBefore" : 0,
-    "groups" : [ ]
-  }, {
-    "id" : "59e5b553-6a47-40e2-8c76-591be6944cf2",
-    "username" : "service-account-licklib-backend",
-    "emailVerified" : false,
-    "createdTimestamp" : 1775334240277,
-    "enabled" : true,
-    "totp" : false,
-    "serviceAccountClientId" : "licklib-backend",
-    "credentials" : [ ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-licklib" ],
-    "clientRoles" : {
-      "realm-management" : [ "manage-clients", "manage-users" ]
-    },
-    "notBefore" : 0,
-    "groups" : [ ]
-  } ],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]
