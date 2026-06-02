@@ -40,6 +40,8 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 	// --- Repos, Services, Handler initialisieren ---
 	userRepo := pg.NewUserRepoGorm(gdb)
 	trackRepo := pg.NewTrackRepoGorm(gdb)
+	notationRepo := pg.NewNotationRepoGorm(gdb)
+
 	userService := service.NewUserService(userRepo)
 	userWriteService := service.NewUserWriteService(userRepo, trackRepo, *minioClient, &cfg.Keycloak)
 	userHandler := handlers.NewUserHandler(userService, userWriteService)
@@ -47,6 +49,10 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
 	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
+
+	notationReadService := service.NewNotationReadService(notationRepo, minioClient)
+	notationWriteService := service.NewNotationWriteService(minioClient, notationRepo, trackRepo)
+	notationHandler := handlers.NewNotationHandler(notationReadService, notationWriteService)
 
 	authHandler := handlers.NewAuthHandler(cfg.Keycloak)
 	// public routes
@@ -56,6 +62,8 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 		r.Get("/tracks/{id}/play", trackHandler.HandlePlay)
 		r.Get("/users/{id}", userHandler.GetByID)
 		r.Get("/users/search/{username}", userHandler.GetByUsername)
+		r.Get("/notation/{id}", notationHandler.GetByTrackID)
+		// r.Get()
 
 		// create user hier public, weil hier keine auth nötig
 		r.Post("/users", userHandler.CreateUser)

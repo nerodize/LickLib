@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     title TEXT NOT NULL,
     description TEXT NOT NULL,
 
-    difficulty difficulty,  -- oder ENUM, wenn du das willst
+    difficulty difficulty,
     file_ext TEXT NOT NULL,
     size_bytes BIGINT NOT NULL,
 

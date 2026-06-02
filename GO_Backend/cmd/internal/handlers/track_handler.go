@@ -225,9 +225,9 @@ func (h *TrackHandler) parseUploadRequest(r *http.Request) (multipart.File, *mul
 
 func (h *TrackHandler) validateUploadFile(header *multipart.FileHeader) error {
 	// Size-Check
-	const maxFileSize = 100 << 20 // 100MB
+	const maxFileSize = 100 << 20 // 100MiB
 	if header.Size > maxFileSize {
-		return errors.New("file exceeds 100MB limit")
+		return errors.New("file exceeds 100MiB limit")
 	}
 
 	// Extension-Check
