@@ -22,7 +22,7 @@ import (
 // @name Authorization
 func main() {
 	// 1. Config laden
-	cfg := config.LoadConfig("config.yaml")
+	cfg := config.LoadConfig("cmd/internal/config/config.yaml")
 
 	metrics.Init()
 

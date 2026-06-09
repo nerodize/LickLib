@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -71,9 +72,18 @@ func (s *UserWriteService) getAdminToken(cfg *config.KeycloakConfig) (string, er
 
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("keycloak admin token error (status %d): %s", resp.StatusCode, string(body))
+	}
+
 	var res map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&res)
-	return res["access_token"].(string), nil
+	json.NewDecoder(strings.NewReader(string(body))).Decode(&res)
+	token, ok := res["access_token"].(string)
+	if !ok {
+		return "", fmt.Errorf("keycloak response missing access_token: %s", string(body))
+	}
+	return token, nil
 
 }
 

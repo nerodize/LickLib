@@ -12,4 +12,6 @@ type NotationRepository interface {
 	UpdateNotation(id uuid.UUID, updates map[string]interface{}) error
 	FindByID(id uuid.UUID) (*models.Notation, error)
 	FindByTrackID(id uuid.UUID) ([]models.Notation, error)
+	FindFailedNotations(trackID uuid.UUID, authorID uuid.UUID) ([]models.Notation, error)
+	DeleteFailedNotations(trackID uuid.UUID, authorID uuid.UUID) error
 }

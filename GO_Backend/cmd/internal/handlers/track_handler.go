@@ -38,6 +38,7 @@ func NewTrackHandler(rs *service.TrackReadService, ws *service.TrackWriteService
 // @Router       /tracks/{id} [get]
 func (h *TrackHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
+	// check if logged in...
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := uuid.Parse(idStr)
 	if err != nil {

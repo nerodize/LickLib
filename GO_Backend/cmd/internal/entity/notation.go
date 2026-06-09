@@ -18,8 +18,9 @@ type Notation struct {
 	TrackID  uuid.UUID `gorm:"column:track_id;not null;index" json:"track_id"`
 	AuthorID uuid.UUID `gorm:"column:author_id;not null;index" json:"author_id"`
 
-	Type       NotationType `gorm:"column:type;type:text;not null" json:"type"`
-	StorageKey string       `gorm:"column:storage_key;type:text;not null" json:"-"`
+	Status     NotationStatus `gorm:"column:status;type:text;not null;default:'UPLOADING'" json:"status"`
+	Type       NotationType   `gorm:"column:type;type:text;not null" json:"type"`
+	StorageKey string         `gorm:"column:storage_key;type:text" json:"-"`
 	FileExt    string       `gorm:"column:file_ext;type:text;not null" json:"file_ext"`
 	SizeBytes  int64        `gorm:"column:size_bytes;not null" json:"size_bytes"`
 	IsOfficial bool         `gorm:"column:is_official;default:false" json:"is_official"`

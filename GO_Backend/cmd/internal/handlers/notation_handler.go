@@ -5,6 +5,7 @@ import (
 	"LickLib/cmd/internal/service"
 	"encoding/json"
 	"errors"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -77,6 +78,29 @@ func (h *NotationHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *NotationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	trackID, _ := uuid.Parse(idStr)
+
+	currentUserID := middleware.GetUserID(r.Context())
+
+	if currentUserID == uuid.Nil {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+
+	log.Printf("Deletion attempt: user %v is trying to delete notation of track %v", currentUserID, trackID)
+
+	err := h.writeService.DeleteNotation(r.Context(), trackID, currentUserID)
+	if err != nil {
+		http.Error(w, "Forbidden: "+err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
 }
 
 func (h *NotationHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {

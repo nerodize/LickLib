@@ -47,7 +47,7 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 	userHandler := handlers.NewUserHandler(userService, userWriteService)
 
 	trackReadService := service.NewTrackService(trackRepo, minioClient)
-	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo)
+	trackWriteService := service.NewTrackWriteService(minioClient, trackRepo, notationRepo)
 	trackHandler := handlers.NewTrackHandler(trackReadService, trackWriteService)
 
 	notationReadService := service.NewNotationReadService(notationRepo, minioClient)
@@ -62,7 +62,8 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 		r.Get("/tracks/{id}/play", trackHandler.HandlePlay)
 		r.Get("/users/{id}", userHandler.GetByID)
 		r.Get("/users/search/{username}", userHandler.GetByUsername)
-		r.Get("/notation/{id}", notationHandler.GetByTrackID)
+		r.Get("/tracks/{id}/notations", notationHandler.GetByTrackID)
+		r.Get("/notations/{id}/download", notationHandler.HandleDownload)
 		// r.Get()
 
 		// create user hier public, weil hier keine auth nötig
@@ -80,9 +81,7 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 	var authMiddleware func(http.Handler) http.Handler
 
 	switch cfg.Mode {
-	case config.Dev:
-		authMiddleware = middleware.AuthSimulation
-	case config.Prod:
+	case config.Dev, config.Prod:
 		authMiddleware = middleware.JWTAuth(cfg.Keycloak.JWKSUrl())
 	}
 
@@ -92,8 +91,12 @@ func SetupRoutes(gdb *gorm.DB, minio *storage.MinioClient, cfg *config.Config) *
 		//r.Use(middleware.AuthSimulation)
 		r.Use(authMiddleware)
 		r.Post("/tracks", trackHandler.HandleUpload)
+		r.Post("/tracks/{id}/notations", notationHandler.HandleUpload)
 		r.Delete("/tracks/{id}", trackHandler.HandleDelete)
 		r.Patch("/tracks/{id}", trackHandler.HandleUpdate)
+
+		// notation
+		r.Delete("/notations/{id}", notationHandler.HandleDelete)
 
 		// users
 		r.Delete("/users/{id}", userHandler.HandleDelete)

@@ -38,10 +38,24 @@ func (r *NotationRepoGorm) FindByID(id uuid.UUID) (*models.Notation, error) {
 	return &notation, nil
 }
 
+func (r *NotationRepoGorm) FindFailedNotations(trackID uuid.UUID, authorID uuid.UUID) ([]models.Notation, error) {
+	var notations []models.Notation
+	err := r.db.
+		Where("track_id = ? AND author_id = ? AND status IN ? AND created_at < NOW() - INTERVAL '10 minutes'", trackID, authorID, []models.NotationStatus{models.NotationStatusFailed, models.NotationStatusUploading}).
+		Find(&notations).Error
+	return notations, err
+}
+
+func (r *NotationRepoGorm) DeleteFailedNotations(trackID uuid.UUID, authorID uuid.UUID) error {
+	return r.db.
+		Where("track_id = ? AND author_id = ? AND status IN ? AND created_at < NOW() - INTERVAL '10 minutes'", trackID, authorID, []models.NotationStatus{models.NotationStatusFailed, models.NotationStatusUploading}).
+		Delete(&models.Notation{}).Error
+}
+
 func (r *NotationRepoGorm) FindByTrackID(trackID uuid.UUID) ([]models.Notation, error) {
 	var notations []models.Notation
 	if err := r.db.Preload("Author").
-		Where("track_id = ?", trackID).
+		Where("track_id = ? AND status = ?", trackID, models.NotationStatusReady).
 		Order("created_at desc").
 		Find(&notations).Error; err != nil {
 		return nil, err

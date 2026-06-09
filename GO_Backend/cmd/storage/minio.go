@@ -114,3 +114,5 @@ func (m *MinioClient) GetPresignedURL(ctx context.Context, objectName string) (s
 func (m *MinioClient) GenerateTrackKey(userID uuid.UUID, trackID uuid.UUID, ext string) string {
 	return fmt.Sprintf("users/%s/tracks/%s%s", userID, trackID, ext)
 }
+
+

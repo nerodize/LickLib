@@ -17,8 +17,9 @@ import (
 )
 
 type TrackWriteService struct {
-	storage StorageClient
-	repo    repository.TrackRepository
+	storage      StorageClient
+	trackRepo    repository.TrackRepository
+	notationRepo repository.NotationRepository
 }
 
 // billiges DTO => auslagern?
@@ -35,8 +36,8 @@ type UpdateTrackRequest struct {
 	Description *string `json:"description"`
 }
 
-func NewTrackWriteService(s StorageClient, r repository.TrackRepository) *TrackWriteService {
-	return &TrackWriteService{storage: s, repo: r}
+func NewTrackWriteService(s StorageClient, tr repository.TrackRepository, nr repository.NotationRepository) *TrackWriteService {
+	return &TrackWriteService{storage: s, trackRepo: tr, notationRepo: nr}
 }
 
 // could be seen as create
@@ -51,7 +52,7 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 	timer := prometheus.NewTimer(metrics.TrackUploadDuration)
 	defer timer.ObserveDuration()
 
-	if err := s.repo.DeleteFailedTracksByTitle(data.UserID, data.Title); err != nil {
+	if err := s.trackRepo.DeleteFailedTracksByTitle(data.UserID, data.Title); err != nil {
 		log.Printf("Warning: Could not cleanup old failed tracks for %s: %v", data.Title, data.UserID)
 	}
 
@@ -77,23 +78,24 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 		StorageKey:  "", // Minio ID
 	}
 
-	if err := s.repo.CreateTrack(trackEntity); err != nil {
+	if err := s.trackRepo.CreateTrack(trackEntity); err != nil {
 		return fmt.Errorf("failed to create track: %w", err)
 	}
 
-	objectName := s.storage.GenerateTrackKey(data.UserID, trackID, data.FileExt)
+	objectName := generateTrackKey(data.UserID, trackID, data.FileExt)
+	// objectName := s.storage.GenerateTrackKey(data.UserID, trackID, data.FileExt)
 
 	if err := s.storage.Upload(ctx, objectName, file, size); err != nil {
 		// ROLLBACK: Status auf FAILED setzen
 		metrics.TrackUploadsTotal.WithLabelValues("failed").Inc()
 
-		s.repo.UpdateTrack(trackID, map[string]interface{}{
+		s.trackRepo.UpdateTrack(trackID, map[string]interface{}{
 			"status": models.TrackStatusFailed,
 		})
 		return fmt.Errorf("storage upload failed: %w", err)
 	}
 
-	if err := s.repo.UpdateTrack(trackID, map[string]interface{}{
+	if err := s.trackRepo.UpdateTrack(trackID, map[string]interface{}{
 		"status":      models.TrackStatusReady,
 		"storage_key": objectName,
 	}); err != nil {
@@ -109,7 +111,7 @@ func (s *TrackWriteService) UploadTrack(ctx context.Context, file io.Reader, siz
 // hier dann noch die Funktion zum Track löschen
 func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uuid.UUID, userID uuid.UUID) error {
 
-	track, err := s.repo.FindByID(trackID)
+	track, err := s.trackRepo.FindByID(trackID)
 	if err != nil {
 		return err
 	}
@@ -122,11 +124,11 @@ func (s *TrackWriteService) DeleteTrack(ctx context.Context, trackID uuid.UUID, 
 		return fmt.Errorf("failed to delete file from storage: %w", err)
 	}
 
-	return s.repo.DeleteTrack(trackID)
+	return s.trackRepo.DeleteTrack(trackID)
 }
 
 func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uuid.UUID, userID uuid.UUID, req UpdateTrackRequest) error {
-	track, err := s.repo.FindByID(trackID)
+	track, err := s.trackRepo.FindByID(trackID)
 	if err != nil {
 		return err
 	}
@@ -142,7 +144,7 @@ func (s *TrackWriteService) UpdateTrack(ctx context.Context, trackID uuid.UUID, 
 		updates["description"] = *req.Description
 	}
 
-	return s.repo.UpdateTrack(trackID, updates)
+	return s.trackRepo.UpdateTrack(trackID, updates)
 }
 
 // ===== VALIDIERUNGEN =====
@@ -192,7 +194,7 @@ func (s *TrackWriteService) validateAudioFile(file io.Reader, size int64) error 
 		return errors.New("file exceeds 100MB limit")
 	}
 
-	// Magic Bytes Check
+	// Magic Bytes Check => in den ersten 12 Bytes steht dann der Dateityp.
 	header := make([]byte, 12)
 	n, err := file.Read(header)
 	if err != nil || n < 12 {
@@ -226,4 +228,8 @@ func (s *TrackWriteService) validateAudioFile(file io.Reader, size int64) error 
 	}
 
 	return errors.New("not a valid audio file (MP3/WAV/FLAC expected)")
+}
+
+func generateTrackKey(userID, trackID uuid.UUID, ext string) string {
+	return fmt.Sprintf("users/%s/tracks/%s%s", userID, trackID, ext)
 }

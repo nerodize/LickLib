@@ -20,6 +20,16 @@ type MockTrackRepo struct {
 	FindByIDFunc                  func(uuid.UUID) (*models.Track, error)
 }
 
+type MockNotationRepo struct {
+	FindByTrackIDFunc          func(uuid.UUID) ([]models.Notation, error)
+	CreateNotationFunc         func(*models.Notation) error
+	DeleteNotationFunc         func(uuid.UUID) error
+	UpdateNotationFunc         func(uuid.UUID, map[string]interface{}) error
+	FindByIDFunc               func(uuid.UUID) (*models.Notation, error)
+	DeleteFailedNotationsFunc func(uuid.UUID, uuid.UUID) error
+	FindFailedNotationsFunc   func(uuid.UUID, uuid.UUID) ([]models.Notation, error)
+}
+
 func (m *MockTrackRepo) CreateTrack(track *models.Track) error {
 	if m.CreateTrackFunc != nil {
 		return m.CreateTrackFunc(track)
@@ -48,7 +58,6 @@ func (m *MockTrackRepo) FindByID(id uuid.UUID) (*models.Track, error) {
 	return nil, errors.New("not implemented")
 }
 
-// ✅ DIESE METHODEN FEHLEN BEI DIR!
 func (m *MockTrackRepo) FindByUsername(username string) ([]models.Track, error) {
 	return nil, nil
 }
@@ -61,13 +70,62 @@ func (m *MockTrackRepo) DeleteTrack(id uuid.UUID) error {
 	return nil
 }
 
+func (m *MockNotationRepo) FindByTrackID(trackID uuid.UUID) ([]models.Notation, error) {
+	if m.FindByTrackIDFunc != nil {
+		return m.FindByTrackIDFunc(trackID)
+	}
+	return nil, nil
+}
+
+func (m *MockNotationRepo) CreateNotation(n *models.Notation) error {
+	if m.CreateNotationFunc != nil {
+		return m.CreateNotationFunc(n)
+	}
+	return nil
+}
+
+func (m *MockNotationRepo) DeleteNotation(id uuid.UUID) error {
+	if m.DeleteNotationFunc != nil {
+		return m.DeleteNotationFunc(id)
+	}
+	return nil
+}
+
+func (m *MockNotationRepo) UpdateNotation(id uuid.UUID, updates map[string]interface{}) error {
+	if m.UpdateNotationFunc != nil {
+		return m.UpdateNotationFunc(id, updates)
+	}
+	return nil
+}
+
+func (m *MockNotationRepo) FindByID(id uuid.UUID) (*models.Notation, error) {
+	if m.FindByIDFunc != nil {
+		return m.FindByIDFunc(id)
+	}
+	return nil, nil
+}
+
+func (m *MockNotationRepo) DeleteFailedNotations(trackID uuid.UUID, authorID uuid.UUID) error {
+	if m.DeleteFailedNotationsFunc != nil {
+		return m.DeleteFailedNotationsFunc(trackID, authorID)
+	}
+	return nil
+}
+
+func (m *MockNotationRepo) FindFailedNotations(trackID uuid.UUID, authorID uuid.UUID) ([]models.Notation, error) {
+	if m.FindFailedNotationsFunc != nil {
+		return m.FindFailedNotationsFunc(trackID, authorID)
+	}
+	return nil, nil
+}
+
 // ===== MOCK STORAGE =====
 
 type MockMinioClient struct {
-	UploadFunc           func(context.Context, string, io.Reader, int64) error
-	DeleteFunc           func(context.Context, string) error
-	GenerateTrackKeyFunc func(uuid.UUID, uuid.UUID, string) string
-	GetPresignedURLFunc  func(context.Context, string) (string, error)
+	UploadFunc func(context.Context, string, io.Reader, int64) error
+	DeleteFunc func(context.Context, string) error
+	//GenerateTrackKeyFunc func(uuid.UUID, uuid.UUID, string) string
+	GetPresignedURLFunc func(context.Context, string) (string, error)
 	//ValidateAudioFileFunc func(io.Reader, int64) error // ← NEU
 
 }
@@ -84,13 +142,6 @@ func (m *MockMinioClient) Delete(ctx context.Context, key string) error {
 		return m.DeleteFunc(ctx, key)
 	}
 	return nil
-}
-
-func (m *MockMinioClient) GenerateTrackKey(userID, trackID uuid.UUID, ext string) string {
-	if m.GenerateTrackKeyFunc != nil {
-		return m.GenerateTrackKeyFunc(userID, trackID, ext)
-	}
-	return "mock-key"
 }
 
 func (m *MockMinioClient) GetPresignedURL(ctx context.Context, key string) (string, error) {
@@ -254,12 +305,9 @@ func TestUploadTrack_Success(t *testing.T) {
 		UploadFunc: func(ctx context.Context, key string, r io.Reader, size int64) error {
 			return nil
 		},
-		GenerateTrackKeyFunc: func(userID, trackID uuid.UUID, ext string) string {
-			return "test-key.mp3"
-		},
 	}
 
-	service := NewTrackWriteService(mockStorage, mockRepo)
+	service := NewTrackWriteService(mockStorage, mockRepo, &MockNotationRepo{})
 
 	audioData := append([]byte("ID3"), make([]byte, 100)...)
 	file := bytes.NewReader(audioData)
@@ -298,7 +346,7 @@ func TestUploadTrack_FailedUpload_SetsStatusToFailed(t *testing.T) {
 		},
 	}
 
-	service := NewTrackWriteService(mockStorage, mockRepo)
+	service := NewTrackWriteService(mockStorage, mockRepo, &MockNotationRepo{})
 
 	audioData := append([]byte("ID3"), make([]byte, 100)...)
 	file := bytes.NewReader(audioData)
